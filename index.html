@@ -2,7 +2,7 @@
 <html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#17392a"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-<title>Mapa da Fazenda</title>
+<title>Gleba</title>
 <style>
 :root{--ink:#14201a;--mut:#5d6b62;--ln:#dde2dc;--bg:#f5f6f3;--pn:#fff;--g:#17392a;--ac:#1f7a52;--ac2:#e8f3ec;--dn:#b3382c}
 @media(prefers-color-scheme:dark){:root{--ink:#e9efe9;--mut:#93a39a;--ln:#2c3a32;--bg:#101712;--pn:#16201a;--g:#0c1a12;--ac:#4fc08a;--ac2:#1d3326;--dn:#ef7b6e}}
@@ -47,7 +47,7 @@ label{font-size:12px;color:var(--mut);display:block;margin-bottom:3px}
 dialog{border:0;border-radius:14px;padding:18px;width:min(92vw,380px);background:var(--pn);color:var(--ink)}
 dialog::backdrop{background:#0008}dialog h2{margin:0 0 12px;font-size:17px}
 #toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--g);color:#fff;padding:10px 16px;border-radius:10px;z-index:9999;display:none;max-width:90vw}
-textarea{width:100%;min-height:110px;padding:10px;border:1px solid var(--ln);border-radius:8px;background:var(--pn);font:inherit;color:var(--ink)}
+.li{flex-wrap:wrap}.acts{display:flex;gap:6px;flex-wrap:wrap;width:100%}dialog{max-height:92vh;overflow:auto}textarea{width:100%;min-height:110px;padding:10px;border:1px solid var(--ln);border-radius:8px;background:var(--pn);font:inherit;color:var(--ink)}
 #dbar{position:absolute;left:10px;right:64px;bottom:10px;z-index:6;display:none;gap:8px;flex-wrap:wrap}
 #dbar.on{display:flex}#dbar .btn{flex:1;min-width:90px;padding:13px 8px;box-shadow:0 2px 8px #0007}
 #pinfo{display:none}
@@ -58,17 +58,17 @@ body.printing #mapw{width:100%;height:auto;aspect-ratio:var(--ar);max-height:230
 </style></head><body>
 <div id="app">
 <aside id="side">
-<header><b>Mapa da Fazenda</b><span>Piquetes, pontos e serviço do trator</span></header>
+<header><b>Gleba</b><span>Piquetes, estruturas, marcadores e serviço do trator</span></header>
 <div class="tabs"><button class="on" data-t="map">Mapa</button><button data-t="trk">Trator</button><button data-t="dash">Painel</button></div>
 <div class="body">
 <div class="sec on" id="s-map">
 <h3>Desenhar</h3>
-<div class="row"><button class="btn" id="bPoly">Novo piquete</button><button class="btn" id="bPt">Novo ponto</button></div>
+<div class="row"><button class="btn" id="bPoly">Novo piquete</button><button class="btn" id="bStr">Nova estrutura</button><button class="btn" id="bPt">Novo marcador</button></div>
 <div class="row"><select id="ptType"><option value="camera">Câmera</option><option value="interruptor">Interruptor</option><option value="bebedouro">Bebedouro</option><option value="porteira">Porteira</option><option value="outro">Outro</option></select></div>
-<div class="row"><button class="btn" id="bCoordP">Piquete por coordenadas</button><button class="btn" id="bCoordPt">Ponto por coordenadas</button></div>
+<div class="row"><button class="btn" id="bCoordP">Piquete por coordenadas</button><button class="btn" id="bCoordPt">Marcador por coordenadas</button></div>
 <div class="row"><button class="btn" id="bPrint">Imprimir / salvar PDF</button></div>
 <div id="drawBar" class="row" style="display:none"><button class="btn pri" id="bDone">Salvar</button><button class="btn" id="bUndo">Desfazer</button><button class="btn dn" id="bCancel">Cancelar</button></div>
-<h3>Piquetes</h3><div id="lP"></div><h3>Pontos</h3><div id="lPt"></div>
+<h3>Camadas e filtros</h3><div id="lLay"></div><h3>Piquetes</h3><div id="lP"></div><h3>Estruturas</h3><div id="lE"></div><h3>Marcadores</h3><div id="lPt"></div>
 <h3>Mapas offline</h3>
 <div class="row"><div><label>Máximo de detalhe do satélite (se a imagem ficar cinza ou borrada, diminua)</label><select id="nz"><option>16</option><option>17</option><option>18</option><option>19</option></select></div></div>
 <div class="row"><div><label>Detalhe máximo</label><select id="oz"><option value="17">Médio (zoom 17)</option><option value="18" selected>Alto (zoom 18)</option><option value="19">Máximo (zoom 19)</option></select></div></div>
@@ -105,9 +105,9 @@ body.printing #mapw{width:100%;height:auto;aspect-ratio:var(--ar);max-height:230
 const $=id=>document.getElementById(id),K='mapa_fazenda_v3';
 const COR={arar:'#e8892b',gradear:'#e5c317',rocar:'#43c463',pulverizar:'#3b9bff'};
 const NOME={arar:'Aração',gradear:'Gradagem',rocar:'Roçada',pulverizar:'Pulverização'};
-const PT={camera:['#7c5cff','C'],interruptor:['#f2a900','I'],bebedouro:['#1e90ff','B'],porteira:['#8d6e63','P'],outro:['#607d8b','•']};
+const PT={camera:['#7c5cff','📷','Câmera'],interruptor:['#f2a900','💡','Interruptor'],bebedouro:['#1e90ff','💧','Bebedouro'],aspersor:['#00a6a6','🌀','Aspersor'],bomba:['#c0392b','⚙️','Bomba / registro'],porteira:['#8d6e63','🚪','Porteira'],cocho:['#a1887f','🥣','Cocho'],outro:['#607d8b','📍','Outro']};
 let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
-S=S||{};S.paddocks=S.paddocks||[];S.points=S.points||[];S.ops=S.ops||[];S.filt=S.filt||{};
+S=S||{};S.paddocks=S.paddocks||[];S.points=S.points||[];S.ops=S.ops||[];S.filt=S.filt||{};S.lay=S.lay||{};S.fm=S.fm||{};
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){toast('Sem espaço no navegador. Exporte um backup.')}};
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 const fmt=(n,d=2)=>n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -144,13 +144,16 @@ function paint(){pend=false;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#1b
   for(let tx=Math.floor((c[0]-W/2/k)/256);tx<=Math.floor((c[0]+W/2/k)/256);tx++){const u=t.replace('{z}',zi).replace('{x}',((tx%n)+n)%n).replace('{y}',ty),im=tile(u);
    if(im.ok)ctx.drawImage(im,(tx*256-c[0])*k+W/2,(ty*256-c[1])*k+H/2,256*k+.6,256*k+.6)}}});
  const m=mpp();ctx.lineCap='butt';ctx.lineJoin='round';
- S.ops.forEach(o=>{if(S.filt[o.type]===false||o.hide)return;path(o.track);ctx.globalAlpha=.5;ctx.strokeStyle=COR[o.type];ctx.lineWidth=Math.max(2,o.width/m);ctx.stroke();ctx.globalAlpha=1});
+ S.ops.forEach(o=>{if(S.filt[o.type]===false||o.hide||S.lay.o===false)return;path(o.track);ctx.globalAlpha=.5;ctx.strokeStyle=COR[o.type];ctx.lineWidth=Math.max(2,o.width/m);ctx.stroke();ctx.globalAlpha=1});
  if(T&&T.pts.length){path(T.pts);ctx.globalAlpha=.55;ctx.strokeStyle=COR[T.type];ctx.lineWidth=Math.max(2,T.width/m);ctx.stroke();ctx.globalAlpha=1;ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke()}
  ctx.font='600 13px system-ui';ctx.textAlign='center';
- S.paddocks.forEach(p=>{const c=p.c;path(c,true);ctx.fillStyle='rgba(255,255,255,.07)';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.stroke();
-  const a=c.reduce((s,q)=>[s[0]+q[0]/c.length,s[1]+q[1]/c.length],[0,0]),s=sp(a[0],a[1]);ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText(p.name,s[0],s[1]);ctx.shadowBlur=0});
- S.points.forEach(p=>{const s=sp(p.lng,p.lat),q=PT[p.type]||PT.outro;ctx.beginPath();ctx.arc(s[0],s[1],14,0,7);ctx.fillStyle=q[0];ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();ctx.fillStyle='#fff';ctx.fillText(q[1],s[0],s[1]+4);
-  ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText(p.name,s[0],s[1]+30);ctx.shadowBlur=0});
+ S.paddocks.forEach(p=>{if(!vis(p))return;const c=p.c,col=p.color||'#ffffff';path(c,true);ctx.globalAlpha=.22;ctx.fillStyle=col;ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle=col;ctx.lineWidth=p.kind==='e'?2:3;ctx.stroke();
+  const a=c.reduce((s,q)=>[s[0]+q[0]/c.length,s[1]+q[1]/c.length],[0,0]),s=sp(a[0],a[1]);ctx.textAlign='center';ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;
+  let y=s[1];ctx.font='22px system-ui';ctx.fillText((FN[p.fn]||['','▫️'])[1],s[0],y);ctx.font='600 13px system-ui';
+  if(!p.hName){y+=18;ctx.fillText(p.name,s[0],y)}if(!p.hArea){y+=16;ctx.fillText(ha(pArea(c)),s[0],y)}if(p.obs&&p.sObs){y+=16;ctx.fillText(p.obs,s[0],y)}
+  if(p.sDim)c.forEach((q,i)=>{const r=c[(i+1)%c.length],m=sp((q[0]+r[0])/2,(q[1]+r[1])/2);ctx.fillText(fmt(dist(q,r),0)+' m',m[0],m[1])});ctx.shadowBlur=0});
+ S.points.forEach(p=>{if(p.hide||S.lay.m===false||S.fm[p.type]===false)return;const s=sp(p.lng,p.lat),q=PT[p.type]||PT.outro;ctx.beginPath();ctx.arc(s[0],s[1],15,0,7);ctx.fillStyle=q[0];ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();
+  ctx.font='16px system-ui';ctx.fillStyle='#fff';ctx.fillText(q[1],s[0],s[1]+6);ctx.font='600 13px system-ui';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText(p.name,s[0],s[1]+32);if(p.obs&&p.sObs)ctx.fillText(p.obs,s[0],s[1]+48);ctx.shadowBlur=0});
  const dr=mode==='edit'?edit.c:draft;
  if(dr.length){path(dr,mode==='edit');ctx.strokeStyle='#fff';ctx.setLineDash([6,5]);ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
   dr.forEach(q=>{const s=sp(q[0],q[1]);ctx.beginPath();ctx.arc(s[0],s[1],mode==='edit'?10:5,0,7);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#1f7a52';ctx.lineWidth=3;ctx.stroke()})}
@@ -229,9 +232,9 @@ function render(){
  $('chips').innerHTML=Object.keys(NOME).map(t=>`<div class="chip ${S.filt[t]===false?'off':''}" data-f="${t}"><span class="dot" style="background:${COR[t]}"></span>${NOME[t]}</div>`).join('');
  $('lO').innerHTML=S.ops.slice().reverse().filter(o=>S.filt[o.type]!==false).map(o=>{const h=(o.fim-o.date)/36e5;return `<div class="li"><span class="dot" style="background:${COR[o.type]}"></span><div class="t"><b>${NOME[o.type]}</b> · ${ha(o.area)}<small>${new Date(o.date).toLocaleDateString('pt-BR')} · ${esc(o.impl||'sem implemento')} · ${fmt(o.width,1)} m · ${esc(o.oper||'—')}</small><small>${fmt(o.over,0)}% sobreposição${h>0?' · '+fmt(o.area/1e4/h,1)+' ha/h':''}</small></div><button class="btn s" data-h="${o.id}">${o.hide?'Mostrar':'Ocultar'}</button><button class="btn s dn" data-do="${o.id}">X</button></div>`}).join('')||'<div class="empty">Nenhuma operação registrada.</div>';
  renderOff();draw()}
-function dash(){const tot=S.ops.reduce((a,o)=>a+o.area,0),pa=S.paddocks.reduce((a,p)=>a+pArea(p.c),0),hrs=S.ops.reduce((a,o)=>a+(o.fim-o.date)/36e5,0);
+function dash(){const tot=S.ops.reduce((a,o)=>a+o.area,0),pa=S.paddocks.filter(p=>p.kind!=='e').reduce((a,p)=>a+pArea(p.c),0),hrs=S.ops.reduce((a,o)=>a+(o.fim-o.date)/36e5,0);
  let h=`<div class="kpis"><div class="kpi"><b>${fmt(pa/1e4,1)}</b><small>ha em piquetes</small></div><div class="kpi"><b>${fmt(tot/1e4,1)}</b><small>ha trabalhados</small></div><div class="kpi"><b>${S.ops.length}</b><small>operações</small></div><div class="kpi"><b>${hrs>0?fmt(tot/1e4/hrs,1):'—'}</b><small>ha/h médio</small></div></div><h3>Cobertura por piquete</h3>`;
- S.paddocks.forEach(p=>{let r='';Object.keys(NOME).forEach(t=>{const pc=covP(p,t)*100;if(pc>.5)r+=`<div class="cov"><div class="h"><span>${NOME[t]}</span><b>${fmt(pc,0)}%</b></div><div class="bar"><i style="width:${pc}%;background:${COR[t]}"></i></div></div>`});
+ S.paddocks.filter(p=>p.kind!=='e').forEach(p=>{let r='';Object.keys(NOME).forEach(t=>{const pc=covP(p,t)*100;if(pc>.5)r+=`<div class="cov"><div class="h"><span>${NOME[t]}</span><b>${fmt(pc,0)}%</b></div><div class="bar"><i style="width:${pc}%;background:${COR[t]}"></i></div></div>`});
   h+=`<div style="margin-bottom:14px"><b>${esc(p.name)}</b> <small style="color:var(--mut)">${ha(pArea(p.c))}</small>${r||'<div style="color:var(--mut)">Nenhum serviço registrado.</div>'}</div>`});
  $('dash').innerHTML=h+(S.paddocks.length?'':'<div class="empty">Desenhe piquetes para ver a cobertura.</div>')}
 function drawBar(){const on=mode==='poly'||mode==='edit';$('drawBar').style.display='none';$('dbar').classList.toggle('on',on);$('fClose').textContent=mode==='edit'?'✓ Salvar edição':'✓ Fechar piquete';$('fGps').style.display=mode==='poly'?'':'none';$('fClose').disabled=mode==='poly'&&draft.length<3;$('bDone').disabled=mode==='poly'&&draft.length<3;$('bPoly').classList.toggle('on',mode==='poly');$('bPt').classList.toggle('on',mode==='point');draw()}
@@ -239,20 +242,24 @@ function cancelDraw(){mode=null;draft=[];edit=null;drawBar()}
 $('bPoly').onclick=()=>{cancelDraw();mode='poly';drawBar();toast('Toque nos cantos do piquete.')};
 $('bPt').onclick=()=>{const m=mode==='point';cancelDraw();if(!m){mode='point';drawBar();toast('Toque no mapa para posicionar.')}};
 $('bUndo').onclick=()=>{draft.pop();drawBar()};$('bCancel').onclick=cancelDraw;
-$('bDone').onclick=async()=>{if(mode==='poly'){const r=await ask('Novo piquete',[{k:'n',l:'Nome do piquete'}]);if(!r||!r.n.trim())return;S.paddocks.push({id:uid(),name:r.n.trim(),c:draft.slice()})}
+$('bDone').onclick=async()=>{if(mode==='poly'){const r=await metaDlg(null,drawKind);if(!r)return;S.paddocks.push(Object.assign({id:uid(),c:draft.slice(),kind:drawKind},r))}
  else if(mode==='edit')edit.p.c=edit.c.slice();save();cancelDraw();render();toast('Salvo.')};
 let lastTap=0;
 async function tap(x,y){const g=ll(x,y);
+ if(mode==='edit'){const c=edit.c,i=c.findIndex(q=>{const t=sp(q[0],q[1]);return Math.hypot(t[0]-x,t[1]-y)<22});
+  if(i>=0){if(c.length>3){c.splice(i,1);draw();toast('Canto removido.')}else toast('Mínimo de 3 cantos.');return}
+  let bi=-1,bd=30;c.forEach((q,j)=>{const a=sp(q[0],q[1]),b=sp(c[(j+1)%c.length][0],c[(j+1)%c.length][1]),dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy||1))),d=Math.hypot(a[0]+t*dx-x,a[1]+t*dy-y);if(d<bd){bd=d;bi=j}});
+  if(bi>=0){c.splice(bi+1,0,g);draw();toast('Canto adicionado. Arraste para ajustar.')}return}
  if(!mode){const n=Date.now();if(n-lastTap<350)zoomAt(x,y,V.z+1);lastTap=n}
- if(mode==='poly'){if(draft.length>=3){const f=sp(draft[0][0],draft[0][1]);if(Math.hypot(f[0]-x,f[1]-y)<24)return $('bDone').click()}draft.push(g);drawBar()}
- else if(mode==='point'){mode=null;drawBar();const r=await ask('Novo ponto',[{k:'n',l:'Nome (ex.: Câmera curral)'}]);if(r&&r.n.trim()){S.points.push({id:uid(),type:$('ptType').value,name:r.n.trim(),lng:g[0],lat:g[1]});save();render()}}
+ if(mode==='poly'){if(draft.length>=3){const f=sp(draft[0][0],draft[0][1]);if(Math.hypot(f[0]-x,f[1]-y)<24)return $('bDone').click()}const k=draft.findIndex((q,i)=>{const s=sp(q[0],q[1]);return i>0&&Math.hypot(s[0]-x,s[1]-y)<22});if(k>0){draft.splice(k,1);drawBar();return}draft.push(g);drawBar()}
+ else if(mode==='point'){mode=null;drawBar();const r=await ask('Novo marcador',[{k:'n',l:'Nome (ex.: Câmera curral)'}]);if(r&&r.n.trim()){S.points.push({id:uid(),type:$('ptType').value,name:r.n.trim(),lng:g[0],lat:g[1]});save();render()}}
  else if(mode==='manual'&&T)addPt(g[0],g[1],null)}
 document.body.addEventListener('click',e=>{const d=e.target.closest('[data-z],[data-e],[data-dp],[data-zp],[data-dpt],[data-h],[data-do],[data-f]');if(!d)return;const x=d.dataset;
  if(x.z){const p=S.paddocks.find(p=>p.id===x.z),keep=S.paddocks;S.paddocks=[p];fit();S.paddocks=keep;draw()}
  if(x.zp){const p=S.points.find(p=>p.id===x.zp);V.lng=p.lng;V.lat=p.lat;V.z=18;draw()}
  if(x.e){const p=S.paddocks.find(p=>p.id===x.e);cancelDraw();mode='edit';edit={p,c:p.c.map(q=>q.slice())};const keep=S.paddocks;S.paddocks=[p];fit();S.paddocks=keep;drawBar();toast('Arraste os cantos e toque em Salvar.')}
  if(x.dp&&confirm('Excluir este piquete?')){S.paddocks=S.paddocks.filter(p=>p.id!==x.dp);save();render()}
- if(x.dpt&&confirm('Excluir este ponto?')){S.points=S.points.filter(p=>p.id!==x.dpt);save();render()}
+ if(x.dpt&&confirm('Excluir este marcador?')){S.points=S.points.filter(p=>p.id!==x.dpt);save();render()}
  if(x.h){const o=S.ops.find(o=>o.id===x.h);o.hide=!o.hide;save();render()}
  if(x.do&&confirm('Excluir esta operação?')){S.ops=S.ops.filter(o=>o.id!==x.do);save();render()}
  if(x.f){S.filt[x.f]=S.filt[x.f]===false;save();render()}});
@@ -277,7 +284,7 @@ $('bStart').onclick=()=>startTrack('gps');$('bManual').onclick=()=>startTrack('m
 function dl(n,t,ty){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:ty}));a.download=n;a.click()}
 const day=()=>new Date().toISOString().slice(0,10);
 $('bBk').onclick=()=>dl('fazenda-backup-'+day()+'.json',JSON.stringify(S),'application/json');
-$('bExpG').onclick=()=>dl('piquetes-'+day()+'.geojson',JSON.stringify({type:'FeatureCollection',features:S.paddocks.map(p=>({type:'Feature',properties:{name:p.name},geometry:{type:'Polygon',coordinates:[[...p.c,p.c[0]]]}}))}),'application/geo+json');
+$('bExpG').onclick=()=>dl('piquetes-'+day()+'.geojson',JSON.stringify({type:'FeatureCollection',features:S.paddocks.map(p=>({type:'Feature',properties:{name:p.name,tipo:p.kind==='e'?'estrutura':'piquete',funcao:p.fn,cor:p.color,obs:p.obs},geometry:{type:'Polygon',coordinates:[[...p.c,p.c[0]]]}}))}),'application/geo+json');
 $('bCsv').onclick=()=>dl('operacoes-'+day()+'.csv','\ufeffdata;servico;implemento;largura_m;operador;area_ha;sobreposicao_pct;duracao_min\n'+S.ops.map(o=>[new Date(o.date).toLocaleString('pt-BR'),NOME[o.type],o.impl,o.width,o.oper,(o.area/1e4).toFixed(2),o.over.toFixed(0),((o.fim-o.date)/6e4).toFixed(0)].map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(';')).join('\n'),'text/csv');
 $('bImp').onclick=()=>$('fImp').click();
 $('fImp').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);
@@ -285,6 +292,41 @@ $('fImp').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileRe
  else{const fs=d.type==='Feature'?[d]:d.features;let n=0;fs.forEach(ft=>{const g=ft.geometry;if(g&&g.type==='Polygon'){S.paddocks.push({id:uid(),name:(ft.properties&&(ft.properties.name||ft.properties.nome))||'Piquete '+(S.paddocks.length+1),c:g.coordinates[0].slice(0,-1)});n++}});if(!n)throw 0;toast(n+' piquete(s) importado(s).')}
  save();render();fit()}catch(x){toast('Arquivo inválido. Use backup .json ou GeoJSON com polígonos.')}};r.readAsText(f);e.target.value=''};
 
+const FN={pasto:['Pastagem','🌿'],milho:['Cultura de milho','🌽'],corte:['Gado de corte','🐂'],leite:['Gado de leite','🐄'],ovelha:['Ovinos','🐑'],cavalo:['Cavalos','🐎'],horta:['Horta','🥬'],outro:['Outro','▫️'],curral:['Curral','⭕'],casa:['Casa','🏠'],aprisco:['Aprisco','🐑'],galpao:['Galpão','🏚️'],acude:['Açude','💧'],estr:['Outra estrutura','🔳']};
+const FNK={p:['pasto','milho','corte','leite','ovelha','cavalo','horta','outro'],e:['curral','casa','aprisco','galpao','acude','estr']};
+const PAL=['#43c463','#e5c317','#3b9bff','#e8892b','#c06cff','#ff6b8a','#2ec4b6','#ffffff'];
+let drawKind='p';
+const vis=p=>!p.hide&&S.lay[p.kind==='e'?'e':'p']!==false&&(p.kind==='e'||((S.minHa==null||pArea(p.c)/1e4>=S.minHa)&&(S.maxHa==null||pArea(p.c)/1e4<=S.maxHa)));
+function ask(title,fields){return new Promise(res=>{
+ const fld=f=>{const v=esc(f.v??'');return f.s?`<select name="${f.k}">${f.s.map(o=>`<option value="${esc(o[0])}"${o[0]===f.v?' selected':''}>${esc(o[1])}</option>`).join('')}</select>`:f.t?`<textarea name="${f.k}">${v}</textarea>`:f.c?`<input type="color" name="${f.k}" value="${v}" style="height:44px;padding:2px">`:f.b?`<label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px"><input type="checkbox" name="${f.k}" ${f.v?'checked':''} style="width:auto"> ${esc(f.l)}</label>`:`<input name="${f.k}" value="${v}">`};
+ $('dform').innerHTML='<h2>'+esc(title)+'</h2>'+fields.map(f=>`<div style="margin-bottom:10px">${f.b?'':`<label>${esc(f.l)}</label>`}${fld(f)}</div>`).join('')+'<div class="row"><button class="btn" value="x">Cancelar</button><button class="btn pri" value="ok">Salvar</button></div>';
+ const d=$('dlg');d.onclose=()=>{if(d.returnValue==='ok'){const o={};fields.forEach(f=>{if(f.b)o[f.k]=false});new FormData($('dform')).forEach((v,k)=>o[k]=(o[k]===false?true:v));res(o)}else res(null)};d.showModal()})}
+async function metaDlg(p,kind){const v=p||{};const r=await ask((p?'Editar ':'Novo ')+(kind==='e'?'estrutura':'piquete'),[
+ {k:'name',l:'Nome',v:v.name},{k:'fn',l:kind==='e'?'Tipo de estrutura':'Função do piquete',s:FNK[kind].map(k=>[k,FN[k][1]+' '+FN[k][0]]),v:v.fn},
+ {k:'color',l:'Cor',c:1,v:v.color||(kind==='e'?'#e0e0e0':PAL[S.paddocks.length%PAL.length])},{k:'obs',l:'Observações',t:1,v:v.obs},
+ {k:'hName',b:1,l:'Ocultar o nome no mapa',v:v.hName},{k:'hArea',b:1,l:'Ocultar a área no mapa',v:v.hArea},{k:'sDim',b:1,l:'Mostrar as medidas dos lados',v:v.sDim},{k:'sObs',b:1,l:'Mostrar as observações no mapa',v:v.sObs}]);
+ if(!r||!r.name.trim())return null;r.name=r.name.trim();return r}
+async function ptDlg(p){const r=await ask('Editar marcador',[{k:'name',l:'Nome',v:p.name},{k:'type',l:'Tipo',s:Object.keys(PT).map(k=>[k,PT[k][1]+' '+PT[k][2]]),v:p.type},{k:'obs',l:'Observações',t:1,v:p.obs},{k:'sObs',b:1,l:'Mostrar as observações no mapa',v:p.sObs}]);if(r&&r.name.trim()){Object.assign(p,r);save();render()}}
+$('ptType').innerHTML=Object.keys(PT).map(k=>`<option value="${k}">${PT[k][1]} ${PT[k][2]}</option>`).join('');
+$('bPoly').addEventListener('click',()=>drawKind='p');$('bStr').onclick=()=>{$('bPoly').click();drawKind='e';toast('Toque nos cantos da estrutura (curral, casa, aprisco...).')};
+function lists(){
+ const row=p=>`<div class="li"><span style="font-size:22px">${(FN[p.fn]||['','▫️'])[1]}</span><span class="dot" style="background:${p.color||'#fff'}"></span><div class="t"><b>${esc(p.name)}</b><small>${ha(pArea(p.c))}${p.obs?' · '+esc(p.obs):''}</small></div><div class="acts"><button class="btn s" data-z="${p.id}">Ver</button><button class="btn s" data-xe="${p.id}">Editar</button><button class="btn s" data-e="${p.id}">Forma</button><button class="btn s" data-xh="${p.id}">${p.hide?'Mostrar':'Ocultar'}</button><button class="btn s dn" data-dp="${p.id}">Excluir</button></div></div>`;
+ const pk=S.paddocks.filter(p=>p.kind!=='e'),ek=S.paddocks.filter(p=>p.kind==='e');
+ $('lP').innerHTML=pk.map(row).join('')||'<div class="empty">Nenhum piquete. Toque em “Novo piquete” e marque os cantos no mapa.</div>';
+ $('lE').innerHTML=ek.map(row).join('')||'<div class="empty">Nenhuma estrutura. Use “Nova estrutura” para desenhar curral, casa, aprisco...</div>';
+ $('lPt').innerHTML=S.points.map(p=>{const q=PT[p.type]||PT.outro;return `<div class="li"><span style="font-size:22px">${q[1]}</span><div class="t"><b>${esc(p.name)}</b><small>${q[2]}${p.obs?' · '+esc(p.obs):''}</small></div><div class="acts"><button class="btn s" data-zp="${p.id}">Ver</button><button class="btn s" data-me="${p.id}">Editar</button><button class="btn s" data-mh="${p.id}">${p.hide?'Mostrar':'Ocultar'}</button><button class="btn s dn" data-dpt="${p.id}">Excluir</button></div></div>`}).join('')||'<div class="empty">Nenhum marcador (câmera, interruptor, bebedouro, aspersor...).</div>';
+ $('lLay').innerHTML=`<div class="chips">${[['p','Piquetes'],['e','Estruturas'],['m','Marcadores'],['o','Serviços']].map(([k,n])=>`<div class="chip ${S.lay[k]===false?'off':''}" data-lay="${k}">${n}</div>`).join('')}</div>
+<label>Categorias de marcadores</label><div class="chips">${Object.keys(PT).map(k=>`<div class="chip ${S.fm[k]===false?'off':''}" data-fm="${k}">${PT[k][1]} ${PT[k][2]}</div>`).join('')}</div>
+<div class="row"><div><label>Piquetes a partir de (ha)</label><input id="minHa" type="number" min="0" step="0.1" value="${S.minHa??''}"></div><div><label>até (ha)</label><input id="maxHa" type="number" min="0" step="0.1" value="${S.maxHa??''}"></div></div>`}
+const _render=render;render=function(){_render();lists()};
+document.addEventListener('change',e=>{const t=e.target;if(t.id==='minHa'||t.id==='maxHa'){S[t.id]=t.value===''?null:parseFloat(t.value);save();draw()}});
+document.body.addEventListener('click',async e=>{const d=e.target.closest('[data-xe],[data-xh],[data-me],[data-mh],[data-lay],[data-fm]');if(!d)return;const x=d.dataset;
+ if(x.xe){const p=S.paddocks.find(p=>p.id===x.xe),r=await metaDlg(p,p.kind==='e'?'e':'p');if(r){Object.assign(p,r);save();render()}}
+ if(x.xh){const p=S.paddocks.find(p=>p.id===x.xh);p.hide=!p.hide;save();render()}
+ if(x.me)ptDlg(S.points.find(p=>p.id===x.me));
+ if(x.mh){const p=S.points.find(p=>p.id===x.mh);p.hide=!p.hide;save();render()}
+ if(x.lay){S.lay[x.lay]=S.lay[x.lay]===false;save();render()}
+ if(x.fm){S.fm[x.fm]=S.fm[x.fm]===false;save();render()}});
 $('nz').value=NZ;$('nz').onchange=()=>{NZ=+$('nz').value;S.nz=NZ;save();cache.clear();V.z=Math.min(V.z,NZ+3);draw();toast('Detalhe máximo do satélite: zoom '+NZ)};
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
 $('bExp').onclick=()=>{document.body.classList.toggle('full');resize()};
@@ -297,11 +339,11 @@ $('bCoordP').onclick=async()=>{const r=await ask('Piquete por coordenadas',[{k:'
  const c=parseCoords(r.c);if(c.length>3&&dist(c[0],c[c.length-1])<.5)c.pop();
  if(!r.n.trim()||c.length<3||!c.every(okLL))return toast('Confira o nome e as coordenadas: mínimo 3 linhas, com latitude e longitude.');
  const p={id:uid(),name:r.n.trim(),c};S.paddocks.push(p);save();render();const k=S.paddocks;S.paddocks=[p];fit();S.paddocks=k;draw();toast('Piquete criado: '+ha(pArea(c)))};
-$('bCoordPt').onclick=async()=>{const r=await ask('Ponto por coordenadas',[{k:'n',l:'Nome do ponto'},{k:'c',l:'Latitude, longitude (ex.: -14.8612, -40.8441)'}]);if(!r)return;
+$('bCoordPt').onclick=async()=>{const r=await ask('Marcador por coordenadas',[{k:'n',l:'Nome do ponto'},{k:'c',l:'Latitude, longitude (ex.: -14.8612, -40.8441)'}]);if(!r)return;
  const c=parseCoords(r.c)[0];if(!r.n.trim()||!c||!okLL(c))return toast('Confira o nome e a coordenada.');
  S.points.push({id:uid(),type:$('ptType').value,name:r.n.trim(),lng:c[0],lat:c[1]});save();render();V.lng=c[0];V.lat=c[1];V.z=Math.max(V.z,17);draw()};
 $('bPrint').onclick=()=>{const o={};S.ops.forEach(x=>o[x.type]=(o[x.type]||0)+x.area);
- $('pinfo').innerHTML='<h2 style="margin:0">Mapa da Fazenda</h2><div>'+new Date().toLocaleString('pt-BR')+' · a imagem de satélite pode estar desatualizada</div><div style="margin-top:6px">'+S.paddocks.map(p=>esc(p.name)+' ('+ha(pArea(p.c))+')').join(' · ')+'</div><div>'+Object.keys(o).map(t=>`<span style="color:${COR[t]}">■</span> ${NOME[t]}: ${ha(o[t])}`).join(' &nbsp; ')+'</div>';
+ $('pinfo').innerHTML='<h2 style="margin:0">Gleba</h2><div>'+new Date().toLocaleString('pt-BR')+' · a imagem de satélite pode estar desatualizada</div><div style="margin-top:6px">'+S.paddocks.filter(vis).map(p=>esc(p.name)+(p.hArea?'':' ('+ha(pArea(p.c))+')')).join(' · ')+'</div><div>'+Object.keys(o).map(t=>`<span style="color:${COR[t]}">■</span> ${NOME[t]}: ${ha(o[t])}`).join(' &nbsp; ')+'</div>';
  $('mapw').style.setProperty('--ar',W+'/'+H);document.body.classList.add('printing');setTimeout(()=>print(),250)};
 addEventListener('afterprint',()=>{document.body.classList.remove('printing');resize()});
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
