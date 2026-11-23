@@ -1,1 +1,0 @@
-# Sistema-Fazenda-Agrop.-Monte-Si-o
