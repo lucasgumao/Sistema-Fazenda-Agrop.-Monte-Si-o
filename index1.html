@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#17392a"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<title>Mapa da Fazenda</title>
+<style>
+:root{--ink:#14201a;--mut:#5d6b62;--ln:#dde2dc;--bg:#f5f6f3;--pn:#fff;--g:#17392a;--ac:#1f7a52;--ac2:#e8f3ec;--dn:#b3382c}
+@media(prefers-color-scheme:dark){:root{--ink:#e9efe9;--mut:#93a39a;--ln:#2c3a32;--bg:#101712;--pn:#16201a;--g:#0c1a12;--ac:#4fc08a;--ac2:#1d3326;--dn:#ef7b6e}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;overscroll-behavior:none}
+#app{display:grid;grid-template-columns:380px 1fr;height:100%}
+#side{display:flex;flex-direction:column;background:var(--pn);border-right:1px solid var(--ln);min-height:0;z-index:2}
+header{background:var(--g);color:#fff;padding:14px 16px}header b{font-size:16px}header span{display:block;font-size:12px;opacity:.7}
+.tabs{display:flex;border-bottom:1px solid var(--ln)}
+.tabs button{flex:1;border:0;background:none;padding:12px 4px;color:var(--mut);font-weight:600;border-bottom:3px solid transparent}
+.tabs button.on{color:var(--ac);border-color:var(--ac)}
+.body{flex:1;overflow:auto;padding:14px 16px}
+.sec{display:none}.sec.on{display:block}
+h3{font-size:12px;color:var(--mut);margin:18px 0 8px;font-weight:600}h3:first-child{margin-top:0}
+button,select,input{font:inherit;color:var(--ink)}
+.btn{border:1px solid var(--ln);background:var(--pn);padding:10px 12px;border-radius:8px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}.btn.big{padding:14px;font-size:15px;width:100%}
+.btn.dn{color:var(--dn)}.btn.on{background:var(--ac2);border-color:var(--ac);color:var(--ac)}.btn.s{padding:6px 9px;font-size:12px}.btn:disabled{opacity:.4}
+.row{display:flex;gap:8px;margin-bottom:8px}.row>*{flex:1;min-width:0}
+input,select{width:100%;padding:10px;border:1px solid var(--ln);border-radius:8px;background:var(--pn)}
+label{font-size:12px;color:var(--mut);display:block;margin-bottom:3px}
+.li{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--ln)}
+.li .t{flex:1;min-width:0}.li small{display:block;color:var(--mut)}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chip{border:1px solid var(--ln);border-radius:99px;padding:6px 11px;cursor:pointer;display:flex;gap:6px;align-items:center}.chip.off{opacity:.4}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}.kpi{border:1px solid var(--ln);border-radius:10px;padding:12px}.kpi b{font-size:22px;display:block}.kpi small{color:var(--mut)}
+.bar{height:8px;background:var(--ln);border-radius:4px;overflow:hidden}.bar i{display:block;height:100%}
+.cov{margin:8px 0}.cov .h{display:flex;justify-content:space-between;margin-bottom:3px}
+.empty{color:var(--mut);padding:14px;border:1px dashed var(--ln);border-radius:10px;text-align:center}
+#mapw{position:relative;min-height:0;overflow:hidden;background:#1b2a21}
+#map{position:absolute;left:0;top:0;touch-action:none;cursor:grab}
+.fab{position:absolute;right:10px;top:10px;z-index:5;display:flex;flex-direction:column;gap:8px}
+.fab button{width:44px;height:44px;border-radius:10px;border:0;background:var(--pn);box-shadow:0 1px 5px #0006;font-size:20px;font-weight:700}
+#bm{position:absolute;left:10px;top:10px;z-index:5;display:flex;background:var(--pn);border-radius:10px;box-shadow:0 1px 5px #0006;overflow:hidden}
+#bm button{border:0;background:none;padding:10px 12px;font-weight:600;color:var(--mut)}#bm button.on{background:var(--ac);color:#fff}
+#hud{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:5;display:none;background:var(--g);color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 4px 14px #0006}
+#hud.on{display:block}#hud .g{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+#hud b{font-size:20px;display:block}#hud small{opacity:.7;font-size:11px}
+#hud .rec{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:600}
+#hud button{background:#ff5a4d;border:0;color:#fff;border-radius:8px;padding:8px 14px;font-weight:700}
+dialog{border:0;border-radius:14px;padding:18px;width:min(92vw,380px);background:var(--pn);color:var(--ink)}
+dialog::backdrop{background:#0008}dialog h2{margin:0 0 12px;font-size:17px}
+#toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--g);color:#fff;padding:10px 16px;border-radius:10px;z-index:9999;display:none;max-width:90vw}
+textarea{width:100%;min-height:110px;padding:10px;border:1px solid var(--ln);border-radius:8px;background:var(--pn);font:inherit;color:var(--ink)}
+#dbar{position:absolute;left:10px;right:64px;bottom:10px;z-index:6;display:none;gap:8px;flex-wrap:wrap}
+#dbar.on{display:flex}#dbar .btn{flex:1;min-width:90px;padding:13px 8px;box-shadow:0 2px 8px #0007}
+#pinfo{display:none}
+@media print{body.printing{background:#fff;color:#000;height:auto}body.printing #side,body.printing .fab,body.printing #bm,body.printing #dbar,body.printing #hud,body.printing #toast{display:none!important}
+body.printing #app{display:block;height:auto}body.printing #pinfo{display:block;font-size:12px;margin-bottom:8px}
+body.printing #mapw{width:100%;height:auto;aspect-ratio:var(--ar);max-height:230mm}body.printing #map{position:static;width:100%!important;height:100%!important}}
+@media(max-width:800px){body.full #app{grid-template-rows:1fr 0}body.full #side{display:none}#app{grid-template-columns:1fr;grid-template-rows:1fr 46%}#side{order:2;border-right:0;border-top:1px solid var(--ln)}header{display:none}#hud .g{grid-template-columns:repeat(2,1fr)}}
+</style></head><body>
+<div id="app">
+<aside id="side">
+<header><b>Mapa da Fazenda</b><span>Piquetes, pontos e serviço do trator</span></header>
+<div class="tabs"><button class="on" data-t="map">Mapa</button><button data-t="trk">Trator</button><button data-t="dash">Painel</button></div>
+<div class="body">
+<div class="sec on" id="s-map">
+<h3>Desenhar</h3>
+<div class="row"><button class="btn" id="bPoly">Novo piquete</button><button class="btn" id="bPt">Novo ponto</button></div>
+<div class="row"><select id="ptType"><option value="camera">Câmera</option><option value="interruptor">Interruptor</option><option value="bebedouro">Bebedouro</option><option value="porteira">Porteira</option><option value="outro">Outro</option></select></div>
+<div class="row"><button class="btn" id="bCoordP">Piquete por coordenadas</button><button class="btn" id="bCoordPt">Ponto por coordenadas</button></div>
+<div class="row"><button class="btn" id="bPrint">Imprimir / salvar PDF</button></div>
+<div id="drawBar" class="row" style="display:none"><button class="btn pri" id="bDone">Salvar</button><button class="btn" id="bUndo">Desfazer</button><button class="btn dn" id="bCancel">Cancelar</button></div>
+<h3>Piquetes</h3><div id="lP"></div><h3>Pontos</h3><div id="lPt"></div>
+<h3>Mapas offline</h3>
+<div class="row"><div><label>Máximo de detalhe do satélite (se a imagem ficar cinza ou borrada, diminua)</label><select id="nz"><option>16</option><option>17</option><option>18</option><option>19</option></select></div></div>
+<div class="row"><div><label>Detalhe máximo</label><select id="oz"><option value="17">Médio (zoom 17)</option><option value="18" selected>Alto (zoom 18)</option><option value="19">Máximo (zoom 19)</option></select></div></div>
+<button class="btn pri big" id="bOff">Baixar a área visível na tela</button>
+<div class="bar" id="offp" style="display:none;margin-top:8px"><i id="offb" style="width:0;background:var(--ac)"></i></div>
+<div id="offt" style="color:var(--mut);margin:4px 0"></div><button class="btn dn" id="bOffX" style="display:none;width:100%">Cancelar download</button>
+<div id="lOff"></div>
+<h3>Dados</h3>
+<div class="row"><button class="btn" id="bImp">Importar</button><button class="btn" id="bExpG">GeoJSON</button><button class="btn" id="bBk">Backup</button></div>
+<input type="file" id="fImp" accept=".json,.geojson" hidden>
+</div>
+<div class="sec" id="s-trk">
+<h3>Nova operação</h3>
+<div class="row"><div><label>Serviço</label><select id="opType"><option value="arar">Aração</option><option value="gradear">Gradagem</option><option value="rocar">Roçada</option><option value="pulverizar">Pulverização</option></select></div>
+<div><label>Largura útil (m)</label><input id="wid" type="number" step="0.1" min="0.5" value="3"></div></div>
+<div class="row"><div><label>Implemento</label><input id="impl"></div><div><label>Operador</label><input id="oper"></div></div>
+<button class="btn pri big" id="bStart">Iniciar com GPS</button>
+<div class="row" style="margin-top:8px"><button class="btn" id="bManual">Traçar por toques no mapa</button></div>
+<h3>Histórico</h3><div class="chips" id="chips"></div><div id="lO"></div>
+<div class="row" style="margin-top:10px"><button class="btn" id="bCsv">Exportar CSV</button></div>
+</div>
+<div class="sec" id="s-dash"><div id="dash"></div></div>
+</div></aside>
+<div id="pinfo"></div><div id="mapw"><canvas id="map"></canvas>
+<div id="bm"><button data-b="sat" class="on">Satélite</button><button data-b="hyb">Híbrido</button><button data-b="osm">Mapa</button></div>
+<div class="fab"><button id="bZi">+</button><button id="bZo">−</button><button id="bLoc">◎</button><button id="bFit">⤢</button><button id="bExp" title="Tela cheia">▤</button></div>
+<div id="dbar"><button class="btn pri" id="fClose">✓ Fechar piquete</button><button class="btn" id="fGps">📍 Aqui</button><button class="btn" id="fUndo">Desfazer</button><button class="btn dn" id="fCancel">Cancelar</button></div>
+<div id="hud"><div class="rec"><span id="hTipo">Gravando</span><button id="bStop">Finalizar</button></div>
+<div class="g"><div><b id="hArea">0,00</b><small>hectares</small></div><div><b id="hSpd">0</b><small>km/h</small></div><div><b id="hRate">0,0</b><small>ha/h</small></div><div><b id="hTime">00:00</b><small id="hAcc">tempo</small></div></div></div>
+</div></div>
+<dialog id="dlg"><form method="dialog" id="dform"></form></dialog><div id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id),K='mapa_fazenda_v3';
+const COR={arar:'#e8892b',gradear:'#e5c317',rocar:'#43c463',pulverizar:'#3b9bff'};
+const NOME={arar:'Aração',gradear:'Gradagem',rocar:'Roçada',pulverizar:'Pulverização'};
+const PT={camera:['#7c5cff','C'],interruptor:['#f2a900','I'],bebedouro:['#1e90ff','B'],porteira:['#8d6e63','P'],outro:['#607d8b','•']};
+let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
+S=S||{};S.paddocks=S.paddocks||[];S.points=S.points||[];S.ops=S.ops||[];S.filt=S.filt||{};
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){toast('Sem espaço no navegador. Exporte um backup.')}};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const fmt=(n,d=2)=>n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const ha=m=>fmt(m/1e4)+' ha';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',3200)}
+function ask(title,fields){return new Promise(res=>{
+ $('dform').innerHTML='<h2>'+esc(title)+'</h2>'+fields.map(f=>`<div style="margin-bottom:10px"><label>${esc(f.l)}</label>${f.t?`<textarea name="${f.k}"></textarea>`:`<input name="${f.k}">`}</div>`).join('')+'<div class="row"><button class="btn" value="x">Cancelar</button><button class="btn pri" value="ok">Salvar</button></div>';
+ const d=$('dlg');d.onclose=()=>{if(d.returnValue==='ok'){const o={};new FormData($('dform')).forEach((v,k)=>o[k]=v);res(o)}else res(null)};d.showModal()})}
+
+/* ===== motor do mapa (sem bibliotecas) ===== */
+const cv=$('map'),ctx=cv.getContext('2d');
+let W=0,H=0,dpr=1,V={lng:-50,lat:-15,z:4},bm='sat',mode=null,draft=[],edit=null,T=null,wid=null,me=null,pend=false;
+const SAT='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const TL={sat:[SAT],hyb:[SAT,'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],osm:['https://tile.openstreetmap.org/{z}/{x}/{y}.png']};
+const cache=new Map();let NZ=S.nz||17;
+let _db;const db=()=>_db||(_db=new Promise((ok,no)=>{const r=indexedDB.open('fazenda_tiles',1);r.onupgradeneeded=()=>r.result.createObjectStore('t');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}));
+const idb=(m,fn)=>db().then(d=>new Promise((ok,no)=>{const t=d.transaction('t',m),r=fn(t.objectStore('t'));t.oncomplete=()=>ok(r.result);t.onerror=()=>no(t.error)}));
+const getTile=u=>idb('readonly',s=>s.get(u)).catch(()=>null);
+function tile(u){let i=cache.get(u);if(!i){i=new Image();i.onload=()=>{i.ok=1;draw()};cache.set(u,i);
+ getTile(u).then(b=>{i.src=b?URL.createObjectURL(b):u});
+ if(cache.size>700){const k=cache.keys().next().value,o=cache.get(k);if(o.src.startsWith('blob:'))URL.revokeObjectURL(o.src);cache.delete(k)}}return i}
+const wp=(lng,lat,z=V.z)=>{const s=256*2**z,n=Math.sin(lat*Math.PI/180);return[(lng+180)/360*s,(.5-Math.log((1+n)/(1-n))/(4*Math.PI))*s]};
+const unp=(x,y,z=V.z)=>{const s=256*2**z;return[x/s*360-180,Math.atan(Math.sinh(Math.PI*(1-2*y/s)))*180/Math.PI]};
+const sp=(lng,lat)=>{const a=wp(lng,lat),c=wp(V.lng,V.lat);return[a[0]-c[0]+W/2,a[1]-c[1]+H/2]};
+const ll=(x,y)=>{const c=wp(V.lng,V.lat);return unp(x-W/2+c[0],y-H/2+c[1])};
+const mpp=()=>156543.03392*Math.cos(V.lat*Math.PI/180)/2**V.z;
+function resize(){const r=$('mapw').getBoundingClientRect();dpr=window.devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';draw()}
+function draw(){if(!pend){pend=true;requestAnimationFrame(paint)}}
+function path(pts,close){ctx.beginPath();pts.forEach((p,i)=>{const s=sp(p[0],p[1]);i?ctx.lineTo(s[0],s[1]):ctx.moveTo(s[0],s[1])});if(close)ctx.closePath()}
+function paint(){pend=false;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#1b2a21';ctx.fillRect(0,0,W,H);
+ const zi=Math.min(NZ,Math.max(1,Math.round(V.z))),k=2**(V.z-zi),c=wp(V.lng,V.lat,zi),n=2**zi;
+ TL[bm].forEach(t=>{for(let ty=Math.floor((c[1]-H/2/k)/256);ty<=Math.floor((c[1]+H/2/k)/256);ty++){if(ty<0||ty>=n)continue;
+  for(let tx=Math.floor((c[0]-W/2/k)/256);tx<=Math.floor((c[0]+W/2/k)/256);tx++){const u=t.replace('{z}',zi).replace('{x}',((tx%n)+n)%n).replace('{y}',ty),im=tile(u);
+   if(im.ok)ctx.drawImage(im,(tx*256-c[0])*k+W/2,(ty*256-c[1])*k+H/2,256*k+.6,256*k+.6)}}});
+ const m=mpp();ctx.lineCap='butt';ctx.lineJoin='round';
+ S.ops.forEach(o=>{if(S.filt[o.type]===false||o.hide)return;path(o.track);ctx.globalAlpha=.5;ctx.strokeStyle=COR[o.type];ctx.lineWidth=Math.max(2,o.width/m);ctx.stroke();ctx.globalAlpha=1});
+ if(T&&T.pts.length){path(T.pts);ctx.globalAlpha=.55;ctx.strokeStyle=COR[T.type];ctx.lineWidth=Math.max(2,T.width/m);ctx.stroke();ctx.globalAlpha=1;ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke()}
+ ctx.font='600 13px system-ui';ctx.textAlign='center';
+ S.paddocks.forEach(p=>{const c=p.c;path(c,true);ctx.fillStyle='rgba(255,255,255,.07)';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.stroke();
+  const a=c.reduce((s,q)=>[s[0]+q[0]/c.length,s[1]+q[1]/c.length],[0,0]),s=sp(a[0],a[1]);ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText(p.name,s[0],s[1]);ctx.shadowBlur=0});
+ S.points.forEach(p=>{const s=sp(p.lng,p.lat),q=PT[p.type]||PT.outro;ctx.beginPath();ctx.arc(s[0],s[1],14,0,7);ctx.fillStyle=q[0];ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();ctx.fillStyle='#fff';ctx.fillText(q[1],s[0],s[1]+4);
+  ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText(p.name,s[0],s[1]+30);ctx.shadowBlur=0});
+ const dr=mode==='edit'?edit.c:draft;
+ if(dr.length){path(dr,mode==='edit');ctx.strokeStyle='#fff';ctx.setLineDash([6,5]);ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
+  dr.forEach(q=>{const s=sp(q[0],q[1]);ctx.beginPath();ctx.arc(s[0],s[1],mode==='edit'?10:5,0,7);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#1f7a52';ctx.lineWidth=3;ctx.stroke()})}
+ if(me){const s=sp(me.lng,me.lat);if(me.acc){ctx.beginPath();ctx.arc(s[0],s[1],me.acc/m,0,7);ctx.fillStyle='rgba(47,128,255,.18)';ctx.fill()}ctx.beginPath();ctx.arc(s[0],s[1],8,0,7);ctx.fillStyle='#2f80ff';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke()}
+ let d=[1,2,5,10,20,50,100,200,500,1000,2000,5000].find(x=>x/m>=70)||5000,px=d/m;ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.textAlign='left';ctx.fillText(d>=1000?d/1000+' km':d+' m',12,H-(T?96:30));ctx.fillRect(12,H-(T?90:24),px,3);ctx.shadowBlur=0}
+function zoomAt(x,y,nz){const g=ll(x,y);V.z=Math.min(NZ+3,Math.max(2,nz));const c=wp(g[0],g[1]),r=unp(c[0]-(x-W/2),c[1]-(y-H/2));V.lng=r[0];V.lat=r[1];draw()}
+const P=new Map();let G=null;
+cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);P.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
+ if(P.size===1){G={t:Date.now(),sx:e.offsetX,sy:e.offsetY,mv:false,h:null};
+  if(mode==='edit')edit.c.forEach((q,i)=>{const s=sp(q[0],q[1]);if(Math.hypot(s[0]-e.offsetX,s[1]-e.offsetY)<22)G.h=i})}
+ else{const[a,b]=[...P.values()];G.pd=Math.hypot(a.x-b.x,a.y-b.y);G.pz=V.z;G.mv=true}};
+cv.onpointermove=e=>{const p=P.get(e.pointerId);if(!p)return;const dx=e.offsetX-p.x,dy=e.offsetY-p.y;p.x=e.offsetX;p.y=e.offsetY;
+ if(P.size===2){const[a,b]=[...P.values()];zoomAt((a.x+b.x)/2,(a.y+b.y)/2,G.pz+Math.log2(Math.hypot(a.x-b.x,a.y-b.y)/G.pd))}
+ else{if(Math.hypot(e.offsetX-G.sx,e.offsetY-G.sy)>8)G.mv=true;
+  if(G.mv){if(G.h!=null){edit.c[G.h]=ll(e.offsetX,e.offsetY)}else{const c=wp(V.lng,V.lat),r=unp(c[0]-dx,c[1]-dy);V.lng=r[0];V.lat=r[1]}draw()}}};
+cv.onpointerup=cv.onpointercancel=e=>{if(P.size===1&&G&&!G.mv&&Date.now()-G.t<600&&e.type==='pointerup')tap(e.offsetX,e.offsetY);P.delete(e.pointerId)};
+cv.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.offsetX,e.offsetY,V.z-e.deltaY/300)},{passive:false});
+$('bZi').onclick=()=>zoomAt(W/2,H/2,V.z+1);$('bZo').onclick=()=>zoomAt(W/2,H/2,V.z-1);
+$('bm').onclick=e=>{const b=e.target.dataset.b;if(b){bm=b;document.querySelectorAll('#bm button').forEach(x=>x.classList.toggle('on',x.dataset.b===b));draw()}};
+function fit(){const a=[...S.paddocks.flatMap(p=>p.c),...S.points.map(p=>[p.lng,p.lat])];if(!a.length)return locate();
+ const x=a.map(q=>q[0]),y=a.map(q=>q[1]);V.lng=(Math.min(...x)+Math.max(...x))/2;V.lat=(Math.min(...y)+Math.max(...y))/2;
+ for(let z=NZ+2;z>2;z-=.25){V.z=z;const s=a.map(q=>sp(q[0],q[1]));if(Math.max(...s.map(q=>Math.abs(q[0]-W/2)))<W/2-40&&Math.max(...s.map(q=>Math.abs(q[1]-H/2)))<H/2-40)break}draw()}
+function locate(){if(!navigator.geolocation)return toast('GPS indisponível.');navigator.geolocation.getCurrentPosition(p=>{me={lng:p.coords.longitude,lat:p.coords.latitude,acc:p.coords.accuracy};V.lng=me.lng;V.lat=me.lat;V.z=17;draw()},()=>toast('Não consegui a localização. Permita o GPS no navegador.'),{enableHighAccuracy:true,timeout:15000})}
+$('bFit').onclick=fit;$('bLoc').onclick=locate;
+
+/* ===== mapas offline ===== */
+S.offline=S.offline||[];let offCancel=false;
+function tileList(b,z0,z1){const L=[];for(let z=z0;z<=z1;z++){const a=wp(b.w,b.n,z),c=wp(b.e,b.s,z),n=2**z;
+ for(let x=Math.floor(a[0]/256);x<=Math.floor(c[0]/256);x++)for(let y=Math.floor(a[1]/256);y<=Math.floor(c[1]/256);y++)if(y>=0&&y<n)TL.hyb.forEach(t=>L.push(t.replace('{z}',z).replace('{x}',((x%n)+n)%n).replace('{y}',y)))}return L}
+function viewBox(){const a=ll(0,0),c=ll(W,H);return{w:a[0],n:a[1],e:c[0],s:c[1]}}
+$('bOff').onclick=async()=>{
+ if(!navigator.onLine)return toast('Conecte-se à internet para baixar mapas.');
+ const z1=Math.min(+$('oz').value,NZ),b=viewBox(),L=tileList(b,13,z1),mb=Math.round(L.length*.022);
+ if(L.length>40000)return toast('Área grande demais ('+L.length+' blocos). Aproxime o mapa ou reduza o detalhe.');
+ const r=await ask('Baixar '+L.length+' blocos (~'+mb+' MB)?',[{k:'n',l:'Nome da área (ex.: Fazenda toda)'}]);if(!r||!r.n.trim())return;
+ try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+ offCancel=false;$('offp').style.display='block';$('bOffX').style.display='block';$('bOff').disabled=true;
+ let done=0,fail=0,i=0;
+ const work=async()=>{while(i<L.length&&!offCancel){const u=L[i++];
+  try{if(!(await getTile(u))){const x=await fetch(u,{mode:'cors'});if(!x.ok)throw 0;const bl=await x.blob();if(!bl.type.startsWith('image'))throw 0;await idb('readwrite',s=>s.put(bl,u))}}catch(e){fail++}
+  done++;if(done%8===0||done===L.length){$('offb').style.width=done/L.length*100+'%';$('offt').textContent=done+' / '+L.length+(fail?' · '+fail+' falhas':'')}}};
+ await Promise.all([1,2,3,4,5,6].map(work));
+ $('offp').style.display='none';$('bOffX').style.display='none';$('bOff').disabled=false;
+ if(offCancel){$('offt').textContent='Download cancelado.';return}
+ if(fail>L.length*.2){$('offt').textContent='Falhou em muitos blocos ('+fail+'). O provedor pode estar bloqueando. Tente de novo.';return}
+ S.offline.push({id:uid(),name:r.n.trim(),b,z1,n:L.length,mb,date:Date.now(),fail});save();renderOff();$('offt').textContent='Pronto: '+r.n.trim()+' disponível offline.'};
+$('bOffX').onclick=()=>offCancel=true;
+function renderOff(){$('lOff').innerHTML=S.offline.map(o=>`<div class="li"><div class="t"><b>${esc(o.name)}</b><small>${o.n} blocos · ~${o.mb} MB · zoom até ${o.z1} · ${new Date(o.date).toLocaleDateString('pt-BR')}</small></div><button class="btn s" data-oz="${o.id}">Ver</button><button class="btn s dn" data-od="${o.id}">X</button></div>`).join('')||'<div class="empty">Nenhum mapa baixado. Dê zoom na área da fazenda e toque em baixar.</div>'}
+document.body.addEventListener('click',async e=>{const d=e.target.closest('[data-oz],[data-od]');if(!d)return;const o=S.offline.find(o=>o.id===(d.dataset.oz||d.dataset.od));if(!o)return;
+ if(d.dataset.oz){V.lng=(o.b.w+o.b.e)/2;V.lat=(o.b.n+o.b.s)/2;V.z=15;draw()}
+ else if(confirm('Apagar o mapa “'+o.name+'”? Blocos compartilhados com outras áreas também serão apagados.')){for(const u of tileList(o.b,13,o.z1))await idb('readwrite',s=>s.delete(u)).catch(()=>0);cache.clear();S.offline=S.offline.filter(x=>x!==o);save();renderOff();draw()}});
+
+/* ===== geometria e cálculo de área (raster, sem Turf) ===== */
+const LOC=(lng0,lat0)=>(lng,lat)=>[(lng-lng0)*111320*Math.cos(lat0*Math.PI/180),(lat-lat0)*110574];
+function pArea(c){const f=LOC(c[0][0],c[0][1]),m=c.map(q=>f(q[0],q[1]));let s=0;m.forEach((q,i)=>{const j=(i+1)%m.length;s+=q[0]*m[j][1]-m[j][0]*q[1]});return Math.abs(s/2)}
+const dist=(a,b)=>{const f=LOC(a[0],a[1]),q=f(b[0],b[1]);return Math.hypot(q[0],q[1])};
+function count(c,fn){const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let n=0;for(let i=0;i<d.length;i+=4)if(fn(d,i))n++;return n}
+function bbox(m,pad){return[Math.min(...m.map(q=>q[0]))-pad,Math.min(...m.map(q=>q[1]))-pad,Math.max(...m.map(q=>q[0]))+pad,Math.max(...m.map(q=>q[1]))+pad]}
+function cover(tr,w,maxPx){const f=LOC(tr[0][0],tr[0][1]),m=tr.map(q=>f(q[0],q[1])),b=bbox(m,w),bw=b[2]-b[0],bh=b[3]-b[1],sc=Math.min(3,maxPx/Math.max(bw,bh));
+ const c=document.createElement('canvas');c.width=Math.ceil(bw*sc)+1;c.height=Math.ceil(bh*sc)+1;const x=c.getContext('2d',{willReadFrequently:true});
+ x.lineWidth=w*sc;x.lineJoin='round';x.lineCap='butt';x.strokeStyle='#000';x.beginPath();m.forEach((q,i)=>{const X=(q[0]-b[0])*sc,Y=(q[1]-b[1])*sc;i?x.lineTo(X,Y):x.moveTo(X,Y)});x.stroke();
+ let len=0;for(let i=1;i<tr.length;i++)len+=dist(tr[i-1],tr[i]);
+ return{area:count(c,(d,i)=>d[i+3]>127)/sc/sc,sum:len*w}}
+function covP(p,type){const f=LOC(p.c[0][0],p.c[0][1]),m=p.c.map(q=>f(q[0],q[1])),b=bbox(m,0),sc=Math.min(3,1500/Math.max(b[2]-b[0],b[3]-b[1]));
+ const c=document.createElement('canvas');c.width=Math.ceil((b[2]-b[0])*sc)+1;c.height=Math.ceil((b[3]-b[1])*sc)+1;const x=c.getContext('2d',{willReadFrequently:true});
+ x.fillStyle='#fff';x.beginPath();m.forEach((q,i)=>{const X=(q[0]-b[0])*sc,Y=(q[1]-b[1])*sc;i?x.lineTo(X,Y):x.moveTo(X,Y)});x.fill();
+ const tot=count(c,(d,i)=>d[i+3]>127);x.globalCompositeOperation='source-atop';x.strokeStyle='#f00';x.lineJoin='round';
+ S.ops.filter(o=>o.type===type).forEach(o=>{x.lineWidth=o.width*sc;x.beginPath();o.track.forEach((q,i)=>{const r=f(q[0],q[1]),X=(r[0]-b[0])*sc,Y=(r[1]-b[1])*sc;i?x.lineTo(X,Y):x.moveTo(X,Y)});x.stroke()});
+ return tot?count(c,(d,i)=>d[i+3]>127&&d[i+1]<128)/tot:0}
+
+/* ===== telas ===== */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('on',s.id==='s-'+b.dataset.t));if(b.dataset.t==='dash')dash()});
+function render(){
+ $('lP').innerHTML=S.paddocks.map(p=>`<div class="li"><div class="t"><b>${esc(p.name)}</b><small>${ha(pArea(p.c))}</small></div><button class="btn s" data-z="${p.id}">Ver</button><button class="btn s" data-e="${p.id}">Editar</button><button class="btn s dn" data-dp="${p.id}">X</button></div>`).join('')||'<div class="empty">Nenhum piquete. Toque em “Novo piquete” e marque os cantos no mapa.</div>';
+ $('lPt').innerHTML=S.points.map(p=>`<div class="li"><span class="dot" style="background:${(PT[p.type]||PT.outro)[0]}"></span><div class="t">${esc(p.name)}<small>${p.type}</small></div><button class="btn s" data-zp="${p.id}">Ver</button><button class="btn s dn" data-dpt="${p.id}">X</button></div>`).join('')||'<div class="empty">Nenhum ponto.</div>';
+ $('chips').innerHTML=Object.keys(NOME).map(t=>`<div class="chip ${S.filt[t]===false?'off':''}" data-f="${t}"><span class="dot" style="background:${COR[t]}"></span>${NOME[t]}</div>`).join('');
+ $('lO').innerHTML=S.ops.slice().reverse().filter(o=>S.filt[o.type]!==false).map(o=>{const h=(o.fim-o.date)/36e5;return `<div class="li"><span class="dot" style="background:${COR[o.type]}"></span><div class="t"><b>${NOME[o.type]}</b> · ${ha(o.area)}<small>${new Date(o.date).toLocaleDateString('pt-BR')} · ${esc(o.impl||'sem implemento')} · ${fmt(o.width,1)} m · ${esc(o.oper||'—')}</small><small>${fmt(o.over,0)}% sobreposição${h>0?' · '+fmt(o.area/1e4/h,1)+' ha/h':''}</small></div><button class="btn s" data-h="${o.id}">${o.hide?'Mostrar':'Ocultar'}</button><button class="btn s dn" data-do="${o.id}">X</button></div>`}).join('')||'<div class="empty">Nenhuma operação registrada.</div>';
+ renderOff();draw()}
+function dash(){const tot=S.ops.reduce((a,o)=>a+o.area,0),pa=S.paddocks.reduce((a,p)=>a+pArea(p.c),0),hrs=S.ops.reduce((a,o)=>a+(o.fim-o.date)/36e5,0);
+ let h=`<div class="kpis"><div class="kpi"><b>${fmt(pa/1e4,1)}</b><small>ha em piquetes</small></div><div class="kpi"><b>${fmt(tot/1e4,1)}</b><small>ha trabalhados</small></div><div class="kpi"><b>${S.ops.length}</b><small>operações</small></div><div class="kpi"><b>${hrs>0?fmt(tot/1e4/hrs,1):'—'}</b><small>ha/h médio</small></div></div><h3>Cobertura por piquete</h3>`;
+ S.paddocks.forEach(p=>{let r='';Object.keys(NOME).forEach(t=>{const pc=covP(p,t)*100;if(pc>.5)r+=`<div class="cov"><div class="h"><span>${NOME[t]}</span><b>${fmt(pc,0)}%</b></div><div class="bar"><i style="width:${pc}%;background:${COR[t]}"></i></div></div>`});
+  h+=`<div style="margin-bottom:14px"><b>${esc(p.name)}</b> <small style="color:var(--mut)">${ha(pArea(p.c))}</small>${r||'<div style="color:var(--mut)">Nenhum serviço registrado.</div>'}</div>`});
+ $('dash').innerHTML=h+(S.paddocks.length?'':'<div class="empty">Desenhe piquetes para ver a cobertura.</div>')}
+function drawBar(){const on=mode==='poly'||mode==='edit';$('drawBar').style.display='none';$('dbar').classList.toggle('on',on);$('fClose').textContent=mode==='edit'?'✓ Salvar edição':'✓ Fechar piquete';$('fGps').style.display=mode==='poly'?'':'none';$('fClose').disabled=mode==='poly'&&draft.length<3;$('bDone').disabled=mode==='poly'&&draft.length<3;$('bPoly').classList.toggle('on',mode==='poly');$('bPt').classList.toggle('on',mode==='point');draw()}
+function cancelDraw(){mode=null;draft=[];edit=null;drawBar()}
+$('bPoly').onclick=()=>{cancelDraw();mode='poly';drawBar();toast('Toque nos cantos do piquete.')};
+$('bPt').onclick=()=>{const m=mode==='point';cancelDraw();if(!m){mode='point';drawBar();toast('Toque no mapa para posicionar.')}};
+$('bUndo').onclick=()=>{draft.pop();drawBar()};$('bCancel').onclick=cancelDraw;
+$('bDone').onclick=async()=>{if(mode==='poly'){const r=await ask('Novo piquete',[{k:'n',l:'Nome do piquete'}]);if(!r||!r.n.trim())return;S.paddocks.push({id:uid(),name:r.n.trim(),c:draft.slice()})}
+ else if(mode==='edit')edit.p.c=edit.c.slice();save();cancelDraw();render();toast('Salvo.')};
+let lastTap=0;
+async function tap(x,y){const g=ll(x,y);
+ if(!mode){const n=Date.now();if(n-lastTap<350)zoomAt(x,y,V.z+1);lastTap=n}
+ if(mode==='poly'){if(draft.length>=3){const f=sp(draft[0][0],draft[0][1]);if(Math.hypot(f[0]-x,f[1]-y)<24)return $('bDone').click()}draft.push(g);drawBar()}
+ else if(mode==='point'){mode=null;drawBar();const r=await ask('Novo ponto',[{k:'n',l:'Nome (ex.: Câmera curral)'}]);if(r&&r.n.trim()){S.points.push({id:uid(),type:$('ptType').value,name:r.n.trim(),lng:g[0],lat:g[1]});save();render()}}
+ else if(mode==='manual'&&T)addPt(g[0],g[1],null)}
+document.body.addEventListener('click',e=>{const d=e.target.closest('[data-z],[data-e],[data-dp],[data-zp],[data-dpt],[data-h],[data-do],[data-f]');if(!d)return;const x=d.dataset;
+ if(x.z){const p=S.paddocks.find(p=>p.id===x.z),keep=S.paddocks;S.paddocks=[p];fit();S.paddocks=keep;draw()}
+ if(x.zp){const p=S.points.find(p=>p.id===x.zp);V.lng=p.lng;V.lat=p.lat;V.z=18;draw()}
+ if(x.e){const p=S.paddocks.find(p=>p.id===x.e);cancelDraw();mode='edit';edit={p,c:p.c.map(q=>q.slice())};const keep=S.paddocks;S.paddocks=[p];fit();S.paddocks=keep;drawBar();toast('Arraste os cantos e toque em Salvar.')}
+ if(x.dp&&confirm('Excluir este piquete?')){S.paddocks=S.paddocks.filter(p=>p.id!==x.dp);save();render()}
+ if(x.dpt&&confirm('Excluir este ponto?')){S.points=S.points.filter(p=>p.id!==x.dpt);save();render()}
+ if(x.h){const o=S.ops.find(o=>o.id===x.h);o.hide=!o.hide;save();render()}
+ if(x.do&&confirm('Excluir esta operação?')){S.ops=S.ops.filter(o=>o.id!==x.do);save();render()}
+ if(x.f){S.filt[x.f]=S.filt[x.f]===false;save();render()}});
+
+/* ===== trator ===== */
+function startTrack(m){const w=parseFloat($('wid').value);if(!(w>0))return toast('Informe a largura útil.');cancelDraw();
+ T={type:$('opType').value,impl:$('impl').value,width:w,oper:$('oper').value,pts:[],t0:Date.now(),area:0};mode=m;
+ $('hTipo').textContent=NOME[T.type]+(m==='manual'?' (toques)':'');$('hud').classList.add('on');tick();T.iv=setInterval(tick,1000);
+ if(m==='gps'){if(!navigator.geolocation){toast('GPS indisponível.');return stopTrack(true)}
+  wid=navigator.geolocation.watchPosition(p=>{const c=p.coords;me={lng:c.longitude,lat:c.latitude,acc:c.accuracy};$('hAcc').textContent='±'+Math.round(c.accuracy)+' m';V.lng=me.lng;V.lat=me.lat;if(V.z<16)V.z=17;draw();if(c.accuracy>25)return;addPt(c.longitude,c.latitude,c.speed)},er=>toast('Erro de GPS: '+er.message),{enableHighAccuracy:true,maximumAge:0})}
+ else toast('Toque no mapa ao longo do trajeto.');draw()}
+function tick(){if(!T)return;const s=(Date.now()-T.t0)/1e3,h=Math.floor(s/3600),mi=Math.floor(s%3600/60);$('hTime').textContent=(h?h+':':'')+String(mi).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0');$('hRate').textContent=fmt(T.area/1e4/Math.max(s/3600,.003),1)}
+function addPt(lng,lat,sp){const l=T.pts[T.pts.length-1];if(l){if(dist(l,[lng,lat])<2.5||(sp!=null&&sp<.5))return}
+ T.pts.push([lng,lat]);$('hSpd').textContent=fmt((sp||0)*3.6,1);
+ if(T.pts.length>1&&(T.pts.length%4===0||mode==='manual')){try{T.area=cover(T.pts,T.width,700).area;$('hArea').textContent=fmt(T.area/1e4)}catch(e){}}draw()}
+function stopTrack(cancel){if(wid!=null){navigator.geolocation.clearWatch(wid);wid=null}
+ if(T){clearInterval(T.iv);if(!cancel){if(T.pts.length>1){try{const r=cover(T.pts,T.width,2500);S.ops.push({id:uid(),type:T.type,impl:T.impl,width:T.width,oper:T.oper,date:T.t0,fim:Date.now(),track:T.pts,area:r.area,over:Math.max(0,(1-r.area/r.sum)*100)});save();toast('Operação salva: '+ha(r.area))}catch(e){toast('Erro no cálculo da área.')}}else toast('Poucos pontos. Nada foi salvo.')}}
+ T=null;mode=null;$('hud').classList.remove('on');$('hArea').textContent='0,00';$('hSpd').textContent='0';render()}
+$('bStart').onclick=()=>startTrack('gps');$('bManual').onclick=()=>startTrack('manual');$('bStop').onclick=()=>stopTrack(false);
+
+/* ===== dados ===== */
+function dl(n,t,ty){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:ty}));a.download=n;a.click()}
+const day=()=>new Date().toISOString().slice(0,10);
+$('bBk').onclick=()=>dl('fazenda-backup-'+day()+'.json',JSON.stringify(S),'application/json');
+$('bExpG').onclick=()=>dl('piquetes-'+day()+'.geojson',JSON.stringify({type:'FeatureCollection',features:S.paddocks.map(p=>({type:'Feature',properties:{name:p.name},geometry:{type:'Polygon',coordinates:[[...p.c,p.c[0]]]}}))}),'application/geo+json');
+$('bCsv').onclick=()=>dl('operacoes-'+day()+'.csv','\ufeffdata;servico;implemento;largura_m;operador;area_ha;sobreposicao_pct;duracao_min\n'+S.ops.map(o=>[new Date(o.date).toLocaleString('pt-BR'),NOME[o.type],o.impl,o.width,o.oper,(o.area/1e4).toFixed(2),o.over.toFixed(0),((o.fim-o.date)/6e4).toFixed(0)].map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(';')).join('\n'),'text/csv');
+$('bImp').onclick=()=>$('fImp').click();
+$('fImp').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);
+ if(d.paddocks&&d.ops){if(!confirm('Substituir tudo pelo backup?'))return;S=Object.assign({filt:{}},d)}
+ else{const fs=d.type==='Feature'?[d]:d.features;let n=0;fs.forEach(ft=>{const g=ft.geometry;if(g&&g.type==='Polygon'){S.paddocks.push({id:uid(),name:(ft.properties&&(ft.properties.name||ft.properties.nome))||'Piquete '+(S.paddocks.length+1),c:g.coordinates[0].slice(0,-1)});n++}});if(!n)throw 0;toast(n+' piquete(s) importado(s).')}
+ save();render();fit()}catch(x){toast('Arquivo inválido. Use backup .json ou GeoJSON com polígonos.')}};r.readAsText(f);e.target.value=''};
+
+$('nz').value=NZ;$('nz').onchange=()=>{NZ=+$('nz').value;S.nz=NZ;save();cache.clear();V.z=Math.min(V.z,NZ+3);draw();toast('Detalhe máximo do satélite: zoom '+NZ)};
+['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
+$('bExp').onclick=()=>{document.body.classList.toggle('full');resize()};
+$('fClose').onclick=()=>$('bDone').click();$('fUndo').onclick=()=>$('bUndo').click();$('fCancel').onclick=()=>$('bCancel').click();
+$('fGps').onclick=()=>{if(!navigator.geolocation)return toast('GPS indisponível.');toast('Buscando sua posição...');
+ navigator.geolocation.getCurrentPosition(p=>{const g=[p.coords.longitude,p.coords.latitude];me={lng:g[0],lat:g[1],acc:p.coords.accuracy};draft.push(g);V.lng=g[0];V.lat=g[1];drawBar();toast('Canto marcado. Precisão ±'+Math.round(p.coords.accuracy)+' m'+(p.coords.accuracy>15?' (baixa: espere mais um pouco parado e tente de novo)':''))},()=>toast('Não consegui o GPS. Permita a localização.'),{enableHighAccuracy:true,timeout:25000,maximumAge:0})};
+function parseCoords(t){const o=[];t.split('\n').forEach(l=>{const n=(l.match(/-?\d+(?:[.,]\d+)?/g)||[]).map(x=>parseFloat(x.replace(',','.')));if(n.length>=2)o.push([n[1],n[0]])});return o}
+const okLL=q=>Math.abs(q[1])<=90&&Math.abs(q[0])<=180;
+$('bCoordP').onclick=async()=>{const r=await ask('Piquete por coordenadas',[{k:'n',l:'Nome do piquete'},{k:'c',l:'Um canto por linha: latitude, longitude (ex.: -14.8612, -40.8441). Mínimo 3, na ordem em que você contorna a área.',t:1}]);if(!r)return;
+ const c=parseCoords(r.c);if(c.length>3&&dist(c[0],c[c.length-1])<.5)c.pop();
+ if(!r.n.trim()||c.length<3||!c.every(okLL))return toast('Confira o nome e as coordenadas: mínimo 3 linhas, com latitude e longitude.');
+ const p={id:uid(),name:r.n.trim(),c};S.paddocks.push(p);save();render();const k=S.paddocks;S.paddocks=[p];fit();S.paddocks=k;draw();toast('Piquete criado: '+ha(pArea(c)))};
+$('bCoordPt').onclick=async()=>{const r=await ask('Ponto por coordenadas',[{k:'n',l:'Nome do ponto'},{k:'c',l:'Latitude, longitude (ex.: -14.8612, -40.8441)'}]);if(!r)return;
+ const c=parseCoords(r.c)[0];if(!r.n.trim()||!c||!okLL(c))return toast('Confira o nome e a coordenada.');
+ S.points.push({id:uid(),type:$('ptType').value,name:r.n.trim(),lng:c[0],lat:c[1]});save();render();V.lng=c[0];V.lat=c[1];V.z=Math.max(V.z,17);draw()};
+$('bPrint').onclick=()=>{const o={};S.ops.forEach(x=>o[x.type]=(o[x.type]||0)+x.area);
+ $('pinfo').innerHTML='<h2 style="margin:0">Mapa da Fazenda</h2><div>'+new Date().toLocaleString('pt-BR')+' · a imagem de satélite pode estar desatualizada</div><div style="margin-top:6px">'+S.paddocks.map(p=>esc(p.name)+' ('+ha(pArea(p.c))+')').join(' · ')+'</div><div>'+Object.keys(o).map(t=>`<span style="color:${COR[t]}">■</span> ${NOME[t]}: ${ha(o[t])}`).join(' &nbsp; ')+'</div>';
+ $('mapw').style.setProperty('--ar',W+'/'+H);document.body.classList.add('printing');setTimeout(()=>print(),250)};
+addEventListener('afterprint',()=>{document.body.classList.remove('printing');resize()});
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+addEventListener('resize',resize);resize();render();fit();
+</script></body></html>
