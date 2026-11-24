@@ -55,7 +55,6 @@ dialog::backdrop{background:#0008}dialog h2{margin:0 0 12px;font-size:17px}
 body.printing #app{display:block;height:auto}body.printing #pinfo{display:block;font-size:12px;margin-bottom:8px}
 body.printing #mapw{width:100%;height:auto;aspect-ratio:var(--ar);max-height:230mm}body.printing #map{position:static;width:100%!important;height:100%!important}}
 @media(max-width:800px){body.full #app{grid-template-rows:1fr 0}body.full #side{display:none}#app{grid-template-columns:1fr;grid-template-rows:1fr 46%}#side{order:2;border-right:0;border-top:1px solid var(--ln)}header{display:none}#hud .g{grid-template-columns:repeat(2,1fr)}}
-#q{margin-bottom:6px}#qr .li{padding:6px 0}#sbar{position:absolute;left:10px;right:64px;bottom:10px;z-index:6;display:none;gap:8px;flex-wrap:wrap;align-items:center;background:var(--pn);border-radius:12px;padding:8px;box-shadow:0 2px 8px #0007}#sbar.on{display:flex}#sbar b{flex:1;min-width:110px}.fab button.on{background:var(--ac);color:#fff}input[type=range]{padding:0}#kbH{margin-top:14px;color:var(--mut)}#kbH div{margin:4px 0}
 </style></head><body>
 <div id="app">
 <aside id="side">
@@ -72,8 +71,8 @@ body.printing #mapw{width:100%;height:auto;aspect-ratio:var(--ar);max-height:230
 <div id="drawBar" class="row" style="display:none"><button class="btn pri" id="bDone">Salvar</button><button class="btn" id="bUndo">Desfazer</button><button class="btn dn" id="bCancel">Cancelar</button></div>
 <h3>Camadas</h3><div id="lCam"></div><div class="row"><button class="btn" id="bLay">Nova camada</button></div><h3>Filtros</h3><div id="lLay"></div><h3>Piquetes</h3><div id="lP"></div><h3>Estruturas</h3><div id="lE"></div><h3>Marcadores</h3><div id="lPt"></div><h3>Tubulação e fiação</h3><div id="lL"></div>
 <h3>Mapas offline</h3>
-<div class="row"><div><label>Máximo de detalhe do satélite (se a imagem ficar cinza ou borrada, diminua)</label><select id="nz"><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option><option>21</option></select></div></div>
-<div class="row"><div><label>Detalhe máximo</label><select id="oz"><option value="17">Médio (zoom 17)</option><option value="18" selected>Alto (zoom 18)</option><option value="19">Máximo (zoom 19)</option><option value="20">Extremo (zoom 20, provedor próprio)</option></select></div></div>
+<div class="row"><div><label>Limite de zoom (o app detecta sozinho o máximo com imagem real nesta região; deixe em 20)</label><select id="nz"><option>16</option><option>17</option><option>18</option><option>19</option></select></div></div>
+<div class="row"><div><label>Detalhe máximo</label><select id="oz"><option value="17">Médio (zoom 17)</option><option value="18" selected>Alto (zoom 18)</option><option value="19">Máximo (zoom 19)</option></select></div></div>
 <button class="btn pri big" id="bOff">Baixar a área visível na tela</button>
 <div class="bar" id="offp" style="display:none;margin-top:8px"><i id="offb" style="width:0;background:var(--ac)"></i></div>
 <div id="offt" style="color:var(--mut);margin:4px 0"></div><button class="btn dn" id="bOffX" style="display:none;width:100%">Cancelar download</button>
@@ -106,22 +105,13 @@ body.printing #mapw{width:100%;height:auto;aspect-ratio:var(--ar);max-height:230
 <dialog id="dlg"><form method="dialog" id="dform"></form></dialog><div id="toast"></div>
 
 <script>
-(async()=>{
 const $=id=>document.getElementById(id),K='mapa_fazenda_v3';
 const COR={arar:'#e8892b',gradear:'#e5c317',rocar:'#43c463',pulverizar:'#3b9bff',adubar:'#c06cff'};
 const NOME={arar:'Aração',gradear:'Gradagem',rocar:'Roçada',pulverizar:'Pulverização',adubar:'Adubação'};
 const PT={camera:['#7c5cff','📷','Câmera'],interruptor:['#f2a900','💡','Interruptor'],bebedouro:['#1e90ff','💧','Bebedouro'],aspersor:['#00a6a6','🌀','Aspersor'],bomba:['#c0392b','⚙️','Bomba / registro'],porteira:['#8d6e63','🚪','Porteira'],cocho:['#a1887f','🥣','Cocho'],outro:['#607d8b','📍','Outro']};
-const GD=()=>new Promise((ok,no)=>{const r=indexedDB.open('gleba_data',1);r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('st');d.createObjectStore('img')};r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
-const gop=(st,m,fn)=>GD().then(d=>new Promise((ok,no)=>{const t=d.transaction(st,m),r=fn(t.objectStore(st));t.oncomplete=()=>ok(r.result);t.onerror=()=>no(t.error)}));
-const HG=new Set();let MIG=0;
-let WL=null,HV=null,TM=0;const KS={x:0,y:0};let S=await gop('st','readonly',s=>s.get('S')).catch(()=>null);
-if(!S){try{S=JSON.parse(localStorage.getItem(K));if(S)MIG=1}catch(e){}}
+let WL=null,HV=null,TM=0;const KS={x:0,y:0};let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
 S=S||{};S.paddocks=S.paddocks||[];S.points=S.points||[];S.ops=S.ops||[];S.plan=S.plan||[];S.lines=S.lines||[];S.layers=S.layers&&S.layers.length?S.layers:[{id:'l0',name:'Fazenda',vis:1}];S.gastos=S.gastos||[];S.filt=S.filt||{};S.lay=S.lay||{};S.fm=S.fm||{};
-let svT=0;const flush=()=>{clearTimeout(svT);svT=0;let c;try{c=structuredClone(S)}catch(e){c=JSON.parse(JSON.stringify(S))}
- gop('st','readwrite',s=>s.put(c,'S')).then(()=>{if(MIG){try{localStorage.removeItem(K)}catch(e){}MIG=0}}).catch(()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){toast('Sem espaço no navegador. Exporte um backup.')}})};
-const save=()=>{clearTimeout(svT);svT=setTimeout(flush,200)};
-addEventListener('pagehide',()=>{if(svT)flush()});document.addEventListener('visibilitychange',()=>{if(document.hidden&&svT)flush()});
-try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+let svT;const save=()=>{clearTimeout(svT);svT=setTimeout(()=>{kv('readwrite',s=>s.put(JSON.stringify(S),'state')).then(()=>{try{localStorage.removeItem(K)}catch(e){}}).catch(()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){toast('Erro ao salvar. Exporte um backup.')}})},250)};
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 const fmt=(n,d=2)=>n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const ha=m=>fmt(m/1e4)+' ha';
@@ -132,27 +122,28 @@ const cv=$('map'),ctx=cv.getContext('2d');
 let W=0,H=0,dpr=1,V={lng:-50,lat:-15,z:4},bm='sat',mode=null,draft=[],edit=null,T=null,wid=null,me=null,pend=false;
 const SAT='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const TL={sat:[SAT],hyb:[SAT,'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],osm:['https://tile.openstreetmap.org/{z}/{x}/{y}.png']};
-const cache=new Map();let NZ=S.nz||17;
-let _db;const db=()=>_db||(_db=new Promise((ok,no)=>{const r=indexedDB.open('fazenda_tiles',1);r.onupgradeneeded=()=>r.result.createObjectStore('t');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}));
+const cache=new Map();let NZ=S.nz||20;
+let _db;const db=()=>_db||(_db=new Promise((ok,no)=>{const r=indexedDB.open('fazenda_tiles',2);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('t'))d.createObjectStore('t');if(!d.objectStoreNames.contains('k'))d.createObjectStore('k')};r.onsuccess=()=>{r.result.onversionchange=()=>r.result.close();ok(r.result)};r.onerror=()=>no(r.error);r.onblocked=()=>no(new Error('blocked'))}));
 const idb=(m,fn)=>db().then(d=>new Promise((ok,no)=>{const t=d.transaction('t',m),r=fn(t.objectStore('t'));t.oncomplete=()=>ok(r.result);t.onerror=()=>no(t.error)}));
-const getTile=u=>idb('readonly',s=>s.get(u)).catch(()=>null);
-function tile(u){let i=cache.get(u);if(!i){i=new Image();i.onload=()=>{i.ok=1;draw()};i.onerror=()=>{if(cache.get(u)===i)cache.delete(u)};cache.set(u,i);
- getTile(u).then(b=>{i.src=b?URL.createObjectURL(b):u});
- if(cache.size>700){const k=cache.keys().next().value,o=cache.get(k);if(o.src.startsWith('blob:'))URL.revokeObjectURL(o.src);cache.delete(k)}}return i}
+const getTile=u=>Promise.race([idb('readonly',s=>s.get(u)),new Promise(r=>setTimeout(()=>r(null),1500))]).catch(()=>null);
+function tile(u){let i=cache.get(u);if(!i){i=new Image();i.crossOrigin='anonymous';i.onload=()=>{i.ok=1;i.ph=isPh(i);draw()};
+ i.onerror=()=>{if(i.crossOrigin&&!i.rt){i.rt=1;i.crossOrigin=null;i.removeAttribute('crossorigin');i.src=i.u0;return}i.err=1;if(cache.get(u)===i)cache.delete(u)};cache.set(u,i);
+ getTile(u).then(b=>{i.u0=b?URL.createObjectURL(b):u;i.src=i.u0});
+ if(cache.size>900){const k=cache.keys().next().value,o=cache.get(k);if(o.src.startsWith('blob:'))URL.revokeObjectURL(o.src);cache.delete(k)}}return i}
 const wp=(lng,lat,z=V.z)=>{const s=256*2**z,n=Math.sin(lat*Math.PI/180);return[(lng+180)/360*s,(.5-Math.log((1+n)/(1-n))/(4*Math.PI))*s]};
 const unp=(x,y,z=V.z)=>{const s=256*2**z;return[x/s*360-180,Math.atan(Math.sinh(Math.PI*(1-2*y/s)))*180/Math.PI]};
 const sp=(lng,lat)=>{const a=wp(lng,lat),c=wp(V.lng,V.lat);return[a[0]-c[0]+W/2,a[1]-c[1]+H/2]};
 const ll=(x,y)=>{const c=wp(V.lng,V.lat);return unp(x-W/2+c[0],y-H/2+c[1])};
 const mpp=()=>156543.03392*Math.cos(V.lat*Math.PI/180)/2**V.z;
 function resize(){const r=$('mapw').getBoundingClientRect();dpr=window.devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';draw()}
-function draw(){if(!pend){pend=true;requestAnimationFrame(paint)}}
+function draw(){if(!pend){pend=true;requestAnimationFrame(paint)}clearTimeout(pT);pT=setTimeout(probe,700)}
 function path(pts,close){ctx.beginPath();pts.forEach((p,i)=>{const s=sp(p[0],p[1]);i?ctx.lineTo(s[0],s[1]):ctx.moveTo(s[0],s[1])});if(close)ctx.closePath()}
-function paint(){pend=false;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#1b2a21';ctx.fillRect(0,0,W,H);
- const zi=Math.min(NZ,Math.max(1,Math.round(V.z))),k=2**(V.z-zi),c=wp(V.lng,V.lat,zi),n=2**zi;
+function paint(){pend=false;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.fillStyle='#1b2a21';ctx.fillRect(0,0,W,H);
+ const zi=Math.min(tz(),Math.max(1,Math.ceil(V.z-.25))),k=2**(V.z-zi),c=wp(V.lng,V.lat,zi),n=2**zi;
  TL[bm].forEach(t=>{for(let ty=Math.floor((c[1]-H/2/k)/256);ty<=Math.floor((c[1]+H/2/k)/256);ty++){if(ty<0||ty>=n)continue;
   for(let tx=Math.floor((c[0]-W/2/k)/256);tx<=Math.floor((c[0]+W/2/k)/256);tx++){const u=t.replace('{z}',zi).replace('{x}',((tx%n)+n)%n).replace('{y}',ty),im=tile(u);
-   if(im.ok)ctx.drawImage(im,(tx*256-c[0])*k+W/2,(ty*256-c[1])*k+H/2,256*k+.6,256*k+.6)}}});
- drawOv();const m=mpp();ctx.lineCap='butt';ctx.lineJoin='round';
+   drawT(t,zi,tx,ty,im,(tx*256-c[0])*k+W/2,(ty*256-c[1])*k+H/2,256*k+.6)}}});
+ drawDr();const m=mpp();ctx.lineCap='butt';ctx.lineJoin='round';
  S.ops.forEach(o=>{if(S.filt[o.type]===false||o.hide||S.lay.o===false)return;path(o.track);ctx.globalAlpha=.5;ctx.strokeStyle=COR[o.type];ctx.lineWidth=Math.max(2,o.width/m);ctx.stroke();ctx.globalAlpha=1});
  if(T&&T.pts.length){path(T.pts);ctx.globalAlpha=.55;ctx.strokeStyle=COR[T.type];ctx.lineWidth=Math.max(2,T.width/m);ctx.stroke();ctx.globalAlpha=1;ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke()}
  ctx.font='600 13px system-ui';ctx.textAlign='center';
@@ -165,13 +156,14 @@ function paint(){pend=false;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#1b
   const a=sp(...l.c[Math.floor(l.c.length/2)]);ctx.font='600 12px system-ui';ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText(l.name+' · '+fmt(l.c.reduce((t,q,i)=>i?t+dist(l.c[i-1],q):0,0),0)+' m',a[0],a[1]-8);ctx.shadowBlur=0});
  sortL(S.points).forEach(p=>{if(p.hide||!lOn(p)||S.lay.m===false||S.fm[p.type]===false)return;const s=sp(p.lng,p.lat),q=PT[p.type]||PT.outro;if(p.r){ctx.beginPath();ctx.arc(s[0],s[1],p.r/m,0,7);ctx.fillStyle='rgba(0,166,166,.15)';ctx.fill();ctx.strokeStyle='rgba(0,166,166,.6)';ctx.lineWidth=1;ctx.stroke()}ctx.beginPath();ctx.arc(s[0],s[1],15,0,7);ctx.fillStyle=q[0];ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();
   ctx.font='16px system-ui';ctx.fillStyle='#fff';ctx.fillText(q[1],s[0],s[1]+6);ctx.font='600 13px system-ui';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText(p.name,s[0],s[1]+32);if(p.obs&&p.sObs)ctx.fillText(p.obs,s[0],s[1]+48);ctx.shadowBlur=0});
+ drawRs();selDraw();
  const dr=mode==='edit'?edit.c:draft;
  if(dr.length){path(dr,mode==='edit');if(mode==='edit'){ctx.fillStyle='rgba(255,255,255,.2)';ctx.fill()}ctx.strokeStyle='#fff';ctx.setLineDash([6,5]);ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
   dr.forEach((q,ix)=>{const s=sp(q[0],q[1]);ctx.beginPath();ctx.arc(s[0],s[1],mode==='edit'?10:5,0,7);ctx.fillStyle=mode==='edit'&&edit.sel===ix?'#ffd400':'#fff';ctx.fill();ctx.strokeStyle='#1f7a52';ctx.lineWidth=3;ctx.stroke()})}
  if(mode==='poly'&&draft.length&&HV){const a=sp(...draft[draft.length-1]),b=sp(HV[0],HV[1]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.strokeStyle='rgba(255,255,255,.6)';ctx.setLineDash([3,5]);ctx.lineWidth=1.5;ctx.stroke();ctx.setLineDash([])}
  if(me){const s=sp(me.lng,me.lat);if(me.acc){ctx.beginPath();ctx.arc(s[0],s[1],me.acc/m,0,7);ctx.fillStyle='rgba(47,128,255,.18)';ctx.fill()}ctx.beginPath();ctx.arc(s[0],s[1],8,0,7);ctx.fillStyle='#2f80ff';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke()}
- let d=[1,2,5,10,20,50,100,200,500,1000,2000,5000].find(x=>x/m>=70)||5000,px=d/m;ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.textAlign='left';ctx.fillText(d>=1000?d/1000+' km':d+' m',12,H-(T?96:30));ctx.fillRect(12,H-(T?90:24),px,3);ctx.shadowBlur=0;drawTop()}
-function zoomAt(x,y,nz){const g=ll(x,y);V.z=Math.min(NZ+3,Math.max(2,nz));const c=wp(g[0],g[1]),r=unp(c[0]-(x-W/2),c[1]-(y-H/2));V.lng=r[0];V.lat=r[1];draw()}
+ let d=[1,2,5,10,20,50,100,200,500,1000,2000,5000].find(x=>x/m>=70)||5000,px=d/m;ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.textAlign='left';ctx.fillText(d>=1000?d/1000+' km':d+' m',12,H-(T?96:30));ctx.fillRect(12,H-(T?90:24),px,3);ctx.shadowBlur=0}
+function zoomAt(x,y,nz){const g=ll(x,y);V.z=Math.min(maxZ(),Math.max(2,nz));const c=wp(g[0],g[1]),r=unp(c[0]-(x-W/2),c[1]-(y-H/2));V.lng=r[0];V.lat=r[1];draw()}
 const P=new Map();let G=null;
 cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);P.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
  if(P.size===1){G={t:Date.now(),sx:e.offsetX,sy:e.offsetY,mv:false,h:null,vx:0,vy:0};
@@ -182,15 +174,15 @@ cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);P.set(e.pointerId,{x:e.of
  else{const[a,b]=[...P.values()];G.pd=Math.hypot(a.x-b.x,a.y-b.y);G.pz=V.z;G.mv=true}};
 cv.onpointermove=e=>{const p=P.get(e.pointerId);if(!p){hover(e);return}if(G&&G.stop)return;const dx=e.offsetX-p.x,dy=e.offsetY-p.y;p.x=e.offsetX;p.y=e.offsetY;if(G&&(G.h!=null||G.body||G.hp)){const f=(e.ctrlKey||e.metaKey||TM===2)?.1:1;G.vx+=dx*f;G.vy+=dy*f}
  if(P.size===2){const[a,b]=[...P.values()];zoomAt((a.x+b.x)/2,(a.y+b.y)/2,G.pz+Math.log2(Math.hypot(a.x-b.x,a.y-b.y)/G.pd))}
- else{if(Math.hypot(e.offsetX-G.sx,e.offsetY-G.sy)>8)G.mv=true;
+ else{if(Math.hypot(e.offsetX-G.sx,e.offsetY-G.sy)>8)G.mv=true;if(mode==='sel'&&G.mv){G.box=[G.sx,G.sy,e.offsetX,e.offsetY];draw();return}
   if(G.mv){if(G.h!=null||G.body||G.hp){dragApply(e)}else{const c=wp(V.lng,V.lat),r=unp(c[0]-dx,c[1]-dy);V.lng=r[0];V.lat=r[1]}draw()}}};
-cv.onpointerup=cv.onpointercancel=e=>{if(G&&P.size===1&&G.mv&&!G.stop){if((G.h!=null||G.body)&&G.pre)edit.u.push(G.pre);if(G.hp)save()}if(P.size===1&&G&&!G.mv&&Date.now()-G.t<600&&e.type==='pointerup')tap(e.offsetX,e.offsetY);P.delete(e.pointerId)};
+cv.onpointerup=cv.onpointercancel=e=>{if(mode==='sel'&&G&&G.box){finishSel(G.box);G.box=null}if(G&&P.size===1&&G.mv&&!G.stop){if((G.h!=null||G.body)&&G.pre)edit.u.push(G.pre);if(G.hp)save()}if(P.size===1&&G&&!G.mv&&Date.now()-G.t<600&&e.type==='pointerup')tap(e.offsetX,e.offsetY);P.delete(e.pointerId)};
 cv.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.offsetX,e.offsetY,V.z-e.deltaY/300)},{passive:false});
 $('bZi').onclick=()=>zoomAt(W/2,H/2,V.z+1);$('bZo').onclick=()=>zoomAt(W/2,H/2,V.z-1);
 $('bm').onclick=e=>{const b=e.target.dataset.b;if(b){bm=b;document.querySelectorAll('#bm button').forEach(x=>x.classList.toggle('on',x.dataset.b===b));draw()}};
 function fit(){const a=[...S.paddocks.flatMap(p=>p.c),...S.points.map(p=>[p.lng,p.lat])];if(!a.length)return locate();
  const x=a.map(q=>q[0]),y=a.map(q=>q[1]);V.lng=(Math.min(...x)+Math.max(...x))/2;V.lat=(Math.min(...y)+Math.max(...y))/2;
- for(let z=NZ+2;z>2;z-=.25){V.z=z;const s=a.map(q=>sp(q[0],q[1]));if(Math.max(...s.map(q=>Math.abs(q[0]-W/2)))<W/2-40&&Math.max(...s.map(q=>Math.abs(q[1]-H/2)))<H/2-40)break}draw()}
+ for(let z=tz();z>2;z-=.25){V.z=z;const s=a.map(q=>sp(q[0],q[1]));if(Math.max(...s.map(q=>Math.abs(q[0]-W/2)))<W/2-40&&Math.max(...s.map(q=>Math.abs(q[1]-H/2)))<H/2-40)break}draw()}
 function locate(){if(!navigator.geolocation)return toast('GPS indisponível.');navigator.geolocation.getCurrentPosition(p=>{me={lng:p.coords.longitude,lat:p.coords.latitude,acc:p.coords.accuracy};V.lng=me.lng;V.lat=me.lat;V.z=17;draw()},()=>toast('Não consegui a localização. Permita o GPS no navegador.'),{enableHighAccuracy:true,timeout:15000})}
 $('bFit').onclick=fit;$('bLoc').onclick=locate;
 
@@ -201,7 +193,7 @@ function tileList(b,z0,z1){const L=[];for(let z=z0;z<=z1;z++){const a=wp(b.w,b.n
 function viewBox(){const a=ll(0,0),c=ll(W,H);return{w:a[0],n:a[1],e:c[0],s:c[1]}}
 $('bOff').onclick=async()=>{
  if(!navigator.onLine)return toast('Conecte-se à internet para baixar mapas.');
- const z1=Math.min(+$('oz').value,NZ),b=viewBox(),L=tileList(b,13,z1),mb=Math.round(L.length*.022);
+ const z1=Math.min(+$('oz').value,NZ,ZL||99),b=viewBox(),L=tileList(b,13,z1),mb=Math.round(L.length*.022);
  if(L.length>40000)return toast('Área grande demais ('+L.length+' blocos). Aproxime o mapa ou reduza o detalhe.');
  const r=await ask('Baixar '+L.length+' blocos (~'+mb+' MB)?',[{k:'n',l:'Nome da área (ex.: Fazenda toda)'}]);if(!r||!r.n.trim())return;
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
@@ -252,18 +244,22 @@ function dash(){const tot=S.ops.reduce((a,o)=>a+o.area,0),pa=S.paddocks.filter(p
  S.paddocks.filter(p=>p.kind!=='e').forEach(p=>{let r='';Object.keys(NOME).forEach(t=>{const pc=Math.max(covP(p,t),...S.ops.filter(o=>o.manual&&o.type===t&&o.pid===p.id).map(o=>(o.pct||100)/100))*100;if(pc>.5)r+=`<div class="cov"><div class="h"><span>${NOME[t]}</span><b>${fmt(pc,0)}%</b></div><div class="bar"><i style="width:${pc}%;background:${COR[t]}"></i></div></div>`});
   h+=`<div style="margin-bottom:14px"><b>${esc(p.name)}</b> <small style="color:var(--mut)">${ha(pArea(p.c))}</small>${r||'<div style="color:var(--mut)">Nenhum serviço registrado.</div>'}</div>`});
  $('dash').innerHTML=h+(S.paddocks.length?'':'<div class="empty">Desenhe piquetes para ver a cobertura.</div>')}
-function drawBar(){const on=mode==='poly'||mode==='edit'||mode==='mvpt';$('drawBar').style.display='none';$('dbar').classList.toggle('on',on);$('fClose').textContent=mode==='edit'?'✓ Salvar edição':mode==='mvpt'?'✓ Pronto':drawKind==='l'||drawKind==='a'?'✓ Concluir linha':drawKind==='z'?'✓ Fechar área':'✓ Fechar piquete';$('fMove').style.display=mode==='edit'?'':'none';$('fMove').classList.toggle('on',mode==='edit'&&!!edit.mv);$('fKey').style.display=mode==='edit'||mode==='mvpt'?'':'none';curs();$('fGps').style.display=mode==='poly'?'':'none';{const mn=drawKind==='l'||drawKind==='a'?2:3;$('fClose').disabled=mode==='poly'&&draft.length<mn;$('bDone').disabled=mode==='poly'&&draft.length<mn}$('bPoly').classList.toggle('on',mode==='poly');$('bPt').classList.toggle('on',mode==='point');draw()}
-function cancelDraw(){stopWalk();mode=null;draft=[];edit=null;drawBar()}
+function drawBar(){const on=mode==='poly'||mode==='edit'||mode==='mvpt';$('drawBar').style.display='none';$('dbar').classList.toggle('on',on);$('fClose').textContent=mode==='edit'?'✓ Salvar edição':mode==='mvpt'?'✓ Pronto':drawKind==='l'||drawKind==='a'?'✓ Concluir linha':'✓ Fechar piquete';$('fMove').style.display=mode==='edit'?'':'none';$('fMove').classList.toggle('on',mode==='edit'&&!!edit.mv);$('fKey').style.display=mode==='edit'||mode==='mvpt'?'':'none';curs();$('fGps').style.display=mode==='poly'?'':'none';{const mn=drawKind==='l'||drawKind==='a'||drawKind==='rl'?2:3;$('fClose').disabled=mode==='poly'&&draft.length<mn;$('bDone').disabled=mode==='poly'&&draft.length<mn}$('bPoly').classList.toggle('on',mode==='poly');$('bPt').classList.toggle('on',mode==='point');draw()}
+function cancelDraw(){shp=null;if(window._w!=null){navigator.geolocation.clearWatch(window._w);window._w=null}if(mode==='sel'&&SEL){SEL.clear();$('sbar').classList.remove('on');$('bSel').classList.remove('on')}mode=null;draft=[];edit=null;drawBar()}
 $('bPoly').onclick=()=>{if(T)return toast('Finalize a gravação antes de desenhar.');cancelDraw();mode='poly';drawBar();toast('Toque nos cantos do piquete.')};
 $('bPt').onclick=()=>{if(T)return toast('Finalize a gravação antes de desenhar.');const m=mode==='point';cancelDraw();if(!m){mode='point';drawBar();toast('Toque no mapa para posicionar.')}};
 $('bUndo').onclick=()=>{if(mode==='edit'){if(edit.u.length){edit.c=edit.u.pop();draw()}return}draft.pop();drawBar()};$('bCancel').onclick=cancelDraw;
 $('bDone').onclick=async()=>{if(mode==='poly'&&drawKind==='l'){const r=await lineDlg(null);if(!r)return;S.lines.push(Object.assign({id:uid(),c:draft.slice(),layer:S.al||'l0'},r))}
  else if(mode==='poly'&&drawKind==='a'){const r=await aspDlg();if(!r)return;mkAsp(draft.slice(),r)}
- else if(mode==='poly'&&drawKind==='z'){if(!(await zoneNew(draft.slice())))return}
+ else if(mode==='poly'&&drawKind==='rl'){const r=await resDlg(null,true);if(!r)return;S.restr.push(Object.assign({id:uid(),c:draft.slice(),line:1},r))}
+ else if(mode==='poly'&&drawKind==='t'){const r=await terDlg(null);if(!r)return;S.terras.push(Object.assign({id:uid(),c:draft.slice()},r))}
+ else if(mode==='poly'&&drawKind==='r'){const r=await resDlg(null);if(!r)return;S.restr.push(Object.assign({id:uid(),c:draft.slice()},r))}
  else if(mode==='poly'){const r=await metaDlg(null,drawKind);if(!r)return;S.paddocks.push(Object.assign({id:uid(),c:draft.slice(),kind:drawKind,layer:S.al||'l0'},r))}
  else if(mode==='edit')edit.p.c=edit.c.slice();relink();save();cancelDraw();render();toast('Salvo.')};
 let lastTap=0;
 async function tap(x,y){const g=ll(x,y);
+ if(shp&&mode==='poly'){shpTap(g);return}
+ if(mode==='sel'){finishSel([x-12,y-12,x+12,y+12]);return}
  if(mode==='mvpt'){edit.pt.lng=g[0];edit.pt.lat=g[1];save();draw();return}
  if(mode==='edit'){const c=edit.c,i=c.findIndex(q=>{const t=sp(q[0],q[1]);return Math.hypot(t[0]-x,t[1]-y)<22});
   if(i>=0){if(c.length>3){if(confirm('Remover este canto?')){snap();c.splice(i,1);draw()}}else toast('Mínimo de 3 cantos.');return}
@@ -292,7 +288,7 @@ function startTrack(m){const w=parseFloat($('wid').value);if(!(w>0))return toast
  else toast('Toque no mapa ao longo do trajeto.');draw()}
 function tick(){if(!T)return;const s=(Date.now()-T.t0)/1e3,h=Math.floor(s/3600),mi=Math.floor(s%3600/60);$('hTime').textContent=(h?h+':':'')+String(mi).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0');$('hRate').textContent=fmt(T.area/1e4/Math.max(s/3600,.003),1)}
 function addPt(lng,lat,sp){const l=T.pts[T.pts.length-1];if(l){if(dist(l,[lng,lat])<2.5||(sp!=null&&sp<.5))return}
- T.pts.push([lng,lat]);if(T.pts.length%5===0)try{localStorage.setItem(K+'_rec',JSON.stringify({type:T.type,impl:T.impl,width:T.width,oper:T.oper,t0:T.t0,fim:Date.now(),pts:T.pts}))}catch(e){}$('hSpd').textContent=fmt((sp||0)*3.6,1);
+ T.pts.push([lng,lat]);checkR([lng,lat]);if(T.pts.length%5===0)try{localStorage.setItem(K+'_rec',JSON.stringify({type:T.type,impl:T.impl,width:T.width,oper:T.oper,t0:T.t0,fim:Date.now(),pts:T.pts}))}catch(e){}$('hSpd').textContent=fmt((sp||0)*3.6,1);
  if(T.pts.length>1&&(T.pts.length%4===0||mode==='manual')){try{T.area=cover(T.pts,T.width,700).area;$('hArea').textContent=fmt(T.area/1e4)}catch(e){}}draw()}
 function stopTrack(cancel){if(WL){try{WL.release()}catch(e){}WL=null}try{localStorage.removeItem(K+'_rec')}catch(e){}if(wid!=null){navigator.geolocation.clearWatch(wid);wid=null}
  if(T){clearInterval(T.iv);if(!cancel){if(T.pts.length>1){try{const r=saveOp(T);toast('Operação salva: '+ha(r.area))}catch(e){toast('Erro no cálculo da área.')}}else toast('Poucos pontos. Nada foi salvo.')}}
@@ -318,7 +314,7 @@ let drawKind='p';
 const vis=p=>!p.hide&&S.lay[p.kind==='e'?'e':'p']!==false&&(p.kind==='e'||((S.minHa==null||pArea(p.c)/1e4>=S.minHa)&&(S.maxHa==null||pArea(p.c)/1e4<=S.maxHa)));
 function ask(title,fields){return new Promise(res=>{
  const fld=f=>{const v=esc(f.v??'');return f.d?`<input type="date" name="${f.k}" value="${v}">`:f.s?`<select name="${f.k}">${f.s.map(o=>`<option value="${esc(o[0])}"${o[0]===f.v?' selected':''}>${esc(o[1])}</option>`).join('')}</select>`:f.t?`<textarea name="${f.k}">${v}</textarea>`:f.c?`<input type="color" name="${f.k}" value="${v}" style="height:44px;padding:2px">`:f.b?`<label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px"><input type="checkbox" name="${f.k}" ${f.v?'checked':''} style="width:auto"> ${esc(f.l)}</label>`:`<input name="${f.k}" value="${v}">`};
- $('dform').innerHTML='<h2>'+esc(title)+'</h2>'+fields.map(f=>`<div style="margin-bottom:10px">${f.b?'':`<label>${esc(f.l)}</label>`}${fld(f)}</div>`).join('')+'<div class="row"><button type="button" class="btn" onclick="document.getElementById(\'dlg\').close(\'x\')">Cancelar</button><button class="btn pri" value="ok">Salvar</button></div>';
+ $('dform').innerHTML='<h2>'+esc(title)+'</h2>'+fields.map(f=>`<div style="margin-bottom:10px">${f.b?'':`<label>${esc(f.l)}</label>`}${fld(f)}</div>`).join('')+'<div class="row"><button class="btn" value="x">Cancelar</button><button class="btn pri" value="ok">Salvar</button></div>';
  const d=$('dlg');d.onclose=()=>{if(d.returnValue==='ok'){const o={};fields.forEach(f=>{if(f.b)o[f.k]=false});new FormData($('dform')).forEach((v,k)=>o[k]=(o[k]===false?true:v));res(o)}else res(null)};d.returnValue='';d.showModal()})}
 async function metaDlg(p,kind){const v=p||{};const r=await ask((p?'Editar ':'Novo ')+(kind==='e'?'estrutura':'piquete'),[
  {k:'name',l:'Nome',v:v.name},{k:'layer',l:'Camada',s:S.layers.map(x=>[x.id,x.name]),v:v.layer||S.al||'l0'},{k:'fn',l:kind==='e'?'Tipo de estrutura':'Função do piquete',s:FNK[kind].map(k=>[k,FN[k][1]+' '+FN[k][0]]),v:v.fn},
@@ -425,7 +421,7 @@ document.body.addEventListener('click',e=>{const d=e.target.closest('[data-pc],[
 render();{const at=S.plan.filter(q=>!q.done&&q.d<ld()).length;if(at)setTimeout(()=>toast(at+' atividade(s) atrasada(s) na programação.'),900)}
 
 /* ===== camadas, linhas e aspersores ===== */
-const lOn=o=>{if(o.gid&&HG.has(o.gid))return false;const l=S.layers.find(x=>x.id===(o.layer||'l0'));return !l||l.vis!==0};
+const lOn=o=>{const l=S.layers.find(x=>x.id===(o.layer||'l0'));return !l||l.vis!==0};
 const sortL=a=>{const ix=o=>Math.max(0,S.layers.findIndex(x=>x.id===(o.layer||'l0')));return a.slice().sort((x,y)=>ix(x)-ix(y))};
 async function lineDlg(l){const v=l||{};const r=await ask((l?'Editar':'Nova')+' linha',[{k:'name',l:'Nome',v:v.name},{k:'layer',l:'Camada',s:S.layers.map(x=>[x.id,x.name]),v:v.layer||S.al||'l0'},{k:'kind',l:'Tipo',s:[['tub','Tubulação'],['fio','Fiação']],v:v.kind||'tub'},{k:'sub',l:'Instalação',s:[['1','Subterrânea'],['0','Aérea / superficial']],v:v.sub===0?'0':'1'},{k:'diam',l:'Diâmetro (mm) ou tensão (V)',v:v.diam},{k:'prof',l:'Profundidade (cm)',v:v.prof},{k:'obs',l:'Observações',t:1,v:v.obs}]);
  if(!r||!r.name.trim())return null;r.name=r.name.trim();r.sub=+r.sub;return r}
@@ -470,199 +466,225 @@ function hist(p){const L={};S.ops.forEach(o=>{if((o.manual&&o.pid===p.id)||(o.pq
 async function lancar(pid,tp,dt,plid){const ps=S.paddocks.filter(p=>p.kind!=='e');if(!ps.length)return toast('Desenhe um piquete primeiro.');
  const r=await ask('Lançar serviço em piquete',[{k:'pid',l:'Piquete',s:ps.map(p=>[p.id,p.name+' ('+ha(pArea(p.c))+')']),v:pid||ps[0].id},{k:'type',l:'Serviço',s:Object.keys(NOME).map(k=>[k,NOME[k]]),v:tp||$('opType').value},
   {k:'d',l:'Data',d:1,v:dt||ld()},{k:'pct',l:'% da área do piquete trabalhada',v:'100'},{k:'impl',l:'Implemento',v:$('impl').value},{k:'oper',l:'Operador',v:$('oper').value}]);if(!r)return;
- if(!zoneGuard(S.paddocks.find(x=>x.id===r.pid),r.type))return;
  const p=S.paddocks.find(x=>x.id===r.pid),pc=Math.min(100,Math.max(1,parseFloat(String(r.pct).replace(',','.'))||100)),t=new Date((r.d||ld())+'T12:00:00').getTime();
  S.ops.push({id:uid(),manual:1,pid:p.id,pct:pc,type:r.type,impl:r.impl,oper:r.oper,width:parseFloat($('wid').value)||0,date:t,fim:t,track:[],area:pArea(p.c)*pc/100,over:0,pq:[{id:p.id,a:Math.round(pArea(p.c)*pc/100)}]});if(plid){const q=S.plan.find(x=>x.id===plid);if(q)q.done=1}save();render();toast('Serviço lançado em '+p.name+'.')}
 $('bLanc').onclick=()=>lancar();
 document.body.addEventListener('click',e=>{const d=e.target.closest('[data-sv]');if(d)lancar(d.dataset.sv)});
 try{let ch=0;S.ops.forEach(o=>{if(!o.manual&&!o.pq&&o.track&&o.track.length>1){o.pq=paddocksOf(o);ch=1}});if(ch)save()}catch(e){}
 try{const rc=JSON.parse(localStorage.getItem(K+'_rec')||'null');if(rc&&rc.pts&&rc.pts.length>1&&confirm('Há uma gravação interrompida ('+NOME[rc.type]+', '+rc.pts.length+' pontos). Salvar como operação?')){saveOp(rc);toast('Operação recuperada e salva.')}localStorage.removeItem(K+'_rec')}catch(e){}
-/* ===== MELHORIAS v4: provedor, drone, selecao, grupos, busca, GPS, areas restritas, atalhos ===== */
-S.groups=S.groups||[];S.zones=S.zones||[];S.ov=S.ov||[];S.prov=S.prov||{t:'esri',key:'',url:''};
-const ESRI=SAT,ESRIL=TL.hyb[1],SEL=new Set(),OVI={};
-let selMode=false,box=null,walk=null,OFFB=null,SRC=[],FIND=null,HP=null,UNDO=null;
-const kindOf=k=>({p:S.paddocks,m:S.points,l:S.lines,z:S.zones})[k];
-const getEl=s=>kindOf(s[0]).find(o=>o.id===s.slice(2));
-const selItems=()=>[...SEL].map(s=>({s,k:s[0],o:getEl(s)})).filter(x=>x.o);
-const coords=(k,o)=>k==='m'?[[o.lng,o.lat]]:o.c;
-const memb=g=>[...S.paddocks.filter(o=>o.gid===g.id).map(o=>'p:'+o.id),...S.points.filter(o=>o.gid===g.id).map(o=>'m:'+o.id),...S.lines.filter(o=>o.gid===g.id).map(o=>'l:'+o.id),...S.zones.filter(o=>o.gid===g.id).map(o=>'z:'+o.id)];
-const snapS=()=>{try{UNDO=structuredClone(S)}catch(e){UNDO=JSON.parse(JSON.stringify(S))}};
-function undoDel(){if(!UNDO)return toast('Nada para desfazer.');const u=UNDO;UNDO=null;Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,u);save();render();toast('Exclusão desfeita.')}
-function delIds(ids){const s={p:new Set(),m:new Set(),l:new Set(),z:new Set()};ids.forEach(i=>s[i[0]].add(i.slice(2)));S.paddocks=S.paddocks.filter(o=>!s.p.has(o.id));S.points=S.points.filter(o=>!s.m.has(o.id));S.lines=S.lines.filter(o=>!s.l.has(o.id));S.zones=S.zones.filter(o=>!s.z.has(o.id));ids.forEach(i=>SEL.delete(i))}
-function fitPts(a){if(!a.length)return;const x=a.map(q=>q[0]),y=a.map(q=>q[1]);V.lng=(Math.min(...x)+Math.max(...x))/2;V.lat=(Math.min(...y)+Math.max(...y))/2;for(let z=NZ+2;z>2;z-=.25){V.z=z;const s=a.map(q=>sp(q[0],q[1]));if(Math.max(...s.map(q=>Math.abs(q[0]-W/2)))<W/2-40&&Math.max(...s.map(q=>Math.abs(q[1]-H/2)))<H/2-40)break}draw()}
-function goSel(ids){SEL.clear();ids.forEach(i=>SEL.add(i));const a=selItems().flatMap(x=>coords(x.k,x.o));if(a.length===1){V.lng=a[0][0];V.lat=a[0][1];V.z=Math.max(V.z,18)}else fitPts(a);selUI()}
-
-/* --- interface injetada --- */
-(()=>{const s=$('s-map');
- s.insertAdjacentHTML('afterbegin','<input id="q" placeholder="🔎 Pesquisar piquete, marcador, grupo, coordenada, lugar…" autocomplete="off"><div id="qr"></div>');
- $('bPrint').parentNode.insertAdjacentHTML('beforebegin','<div class="row"><button class="btn" id="bSel">⬚ Selecionar</button><button class="btn" id="bZone">🚫 Área restrita</button></div><div class="row"><button class="btn" id="bWalk">📍 Demarcar com GPS</button><button class="btn" id="bDim">📏 Medidas</button></div>');
- $('lCam').previousElementSibling.insertAdjacentHTML('beforebegin','<h3>Grupos e lotes de aspersores</h3><div class="row"><button class="btn" id="bGrp">Agrupar seleção</button><button class="btn" id="bAll">Selecionar tudo</button></div><div id="lGrp"></div><h3>Áreas restritas</h3><div id="lZ"></div>');
- const h=t=>[...s.querySelectorAll('h3')].find(x=>x.textContent===t);
- h('Mapas offline').insertAdjacentHTML('beforebegin','<h3>Qualidade do mapa (satélite)</h3><div class="row"><div><label>Provedor</label><select id="pvT"><option value="esri">Esri (grátis, padrão)</option><option value="mapbox">Mapbox (chave própria)</option><option value="maptiler">MapTiler (chave própria)</option><option value="custom">Outro (URL com {z}/{x}/{y})</option></select></div></div><div class="row"><div><label>Chave da API ou URL</label><input id="pvK" autocomplete="off"></div></div><div class="row"><button class="btn" id="pvA">Aplicar provedor</button></div><div class="row"><button class="btn" id="ovAdd">+ Foto de drone</button><button class="btn" id="offAll">Baixar área da fazenda</button></div><input type="file" id="ovF" accept="image/*" hidden><div id="lOv"></div>');
- h('Dados').insertAdjacentHTML('beforebegin','<h3>Limpeza</h3><div class="row"><select id="clK"><option value="p">Todos os piquetes</option><option value="e">Todas as estruturas</option><option value="m">Todos os marcadores</option><option value="a">Todos os aspersores</option><option value="l">Todas as linhas</option><option value="z">Todas as áreas restritas</option><option value="o">Histórico do trator</option><option value="g">Todos os gastos</option></select></div><div class="row"><button class="btn dn" id="bClr">Limpar categoria</button><button class="btn" id="bUnd">↶ Desfazer exclusão</button></div>');
- s.insertAdjacentHTML('beforeend','<details id="kbH"><summary><b>Atalhos de teclado (?)</b></summary><div><b>Enter</b> confirma/fecha o desenho · <b>Esc</b> cancela</div><div><b>Delete / Backspace</b> apaga o último ponto ou os itens selecionados</div><div><b>Ctrl+Z</b> desfaz · <b>Ctrl+A</b> seleciona tudo · <b>Ctrl+G</b> agrupa · <b>Ctrl+S</b> backup · <b>Ctrl+F</b> ou <b>/</b> pesquisa</div><div><b>Ctrl+clique</b> soma à seleção · <b>Ctrl+arrastar</b> caixa (→ dentro, ← tocando)</div><div><b>P</b> piquete · <b>E</b> estrutura · <b>M</b> marcador · <b>L</b> linha · <b>A</b> aspersores · <b>R</b> área restrita · <b>G</b> GPS · <b>S</b> seleção · <b>D</b> medidas · <b>F</b> ajustar · <b>+ −</b> zoom</div><div><b>Setas</b> movem o canto · <b>X / Y</b> travam o eixo ao arrastar</div></details>');
- $('bExp').insertAdjacentHTML('beforebegin','<button id="bSelF" title="Selecionar (S)">⬚</button>');
- $('mapw').insertAdjacentHTML('beforeend','<div id="sbar"><b id="sN"></b><button class="btn" id="sGrp">Agrupar</button><button class="btn" id="sLay">Camada</button><button class="btn dn" id="sDel">Excluir</button><button class="btn" id="sClr">✕</button></div>');
- $('pvT').value=S.prov.t;$('pvK').value=S.prov.t==='custom'?(S.prov.url||''):(S.prov.key||'')})();
-
-/* --- provedor de mapa --- */
-function applyProv(){const p=S.prov,k=encodeURIComponent(p.key||'');
- if(p.t==='mapbox'&&k){TL.sat=['https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/256/{z}/{x}/{y}@2x?access_token='+k];TL.hyb=['https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token='+k]}
- else if(p.t==='maptiler'&&k){TL.sat=['https://api.maptiler.com/maps/satellite/256/{z}/{x}/{y}.jpg?key='+k];TL.hyb=['https://api.maptiler.com/maps/hybrid/256/{z}/{x}/{y}.jpg?key='+k]}
- else if(p.t==='custom'&&/\{z\}/.test(p.url||'')){TL.sat=[p.url];TL.hyb=[p.url]}
- else{TL.sat=[ESRI];TL.hyb=[ESRI,ESRIL]}cache.clear();draw()}
-$('pvA').onclick=()=>{const t=$('pvT').value,v=$('pvK').value.trim();if(t!=='esri'&&!v)return toast('Informe a chave (ou a URL).');if(t==='custom'&&!(/\{z\}/.test(v)&&/\{x\}/.test(v)&&/\{y\}/.test(v)))return toast('A URL precisa ter {z}, {x} e {y}.');
- S.prov={t,key:t==='custom'?'':v,url:t==='custom'?v:''};if(t!=='esri'&&NZ<20){NZ=20;S.nz=20;$('nz').value=20}save();applyProv();toast('Provedor aplicado. Se o mapa ficar cinza, confira a chave ou reduza o detalhe máximo.')};
-applyProv();
-const _vb=viewBox;viewBox=function(){return OFFB||_vb()};
-$('offAll').onclick=async()=>{const a=[...S.paddocks.flatMap(p=>p.c),...S.points.map(p=>[p.lng,p.lat]),...S.lines.flatMap(l=>l.c),...S.zones.flatMap(z=>z.c)];if(!a.length)return toast('Desenhe algo primeiro ou use “Baixar a área visível”.');
- const x=a.map(q=>q[0]),y=a.map(q=>q[1]),m=.0012;OFFB={w:Math.min(...x)-m,e:Math.max(...x)+m,n:Math.max(...y)+m,s:Math.min(...y)-m};try{await $('bOff').onclick()}finally{OFFB=null}};
-
-/* --- foto de drone (camada georreferenciada, guardada no IndexedDB) --- */
-async function ovLoad(){for(const o of S.ov){try{const b=await gop('img','readonly',s=>s.get(o.id));if(b){const i=new Image();i.onload=()=>draw();i.src=URL.createObjectURL(b);OVI[o.id]=i}}catch(e){}}}
-function drawOv(){S.ov.forEach(o=>{const i=OVI[o.id];if(o.vis===0||!i||!i.naturalWidth)return;const a=sp(o.b.w,o.b.n),c=sp(o.b.e,o.b.s);ctx.globalAlpha=o.op??.85;ctx.drawImage(i,a[0],a[1],c[0]-a[0],c[1]-a[1]);ctx.globalAlpha=1})}
-async function ovDlg(o,nw){const r=await ask(nw?'Foto de drone':'Posição da foto',[{k:'n',l:'Nome',v:o.name},{k:'N',l:'Latitude do topo (norte)',v:o.b.n.toFixed(6)},{k:'S',l:'Latitude da base (sul)',v:o.b.s.toFixed(6)},{k:'W',l:'Longitude da esquerda (oeste)',v:o.b.w.toFixed(6)},{k:'E',l:'Longitude da direita (leste)',v:o.b.e.toFixed(6)}]);if(!r)return 0;
- const b={n:num(r.N),s:num(r.S),w:num(r.W),e:num(r.E)};if(!(b.n>b.s&&b.e>b.w&&okLL([b.w,b.n])&&okLL([b.e,b.s]))){toast('Coordenadas inválidas (norte > sul e leste > oeste).');return 0}o.name=r.n.trim()||o.name;o.b=b;return 1}
-$('ovAdd').onclick=()=>$('ovF').click();
-$('ovF').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const i=new Image();await new Promise(r=>{i.onload=r;i.onerror=r;i.src=URL.createObjectURL(f)});if(!i.naturalWidth)return toast('Imagem inválida.');
- const wp_=W*.6,hp=wp_*i.naturalHeight/i.naturalWidth,x0=W*.2,y0=H/2-hp/2,a=ll(x0,y0),c=ll(x0+wp_,y0+hp),o={id:uid(),name:f.name.replace(/\.[^.]+$/,''),b:{w:a[0],n:a[1],e:c[0],s:c[1]},op:.85,vis:1};
- toast('Informe as coordenadas dos cantos (do software do drone). Já vem preenchido com a tela atual.');if(!(await ovDlg(o,1)))return;await gop('img','readwrite',s=>s.put(f,o.id));OVI[o.id]=i;S.ov.push(o);save();render()};
-document.addEventListener('input',e=>{const id=e.target.dataset&&e.target.dataset.ovo;if(id){const o=S.ov.find(x=>x.id===id);if(o){o.op=e.target.value/100;save();draw()}}});
-
-/* --- areas restritas --- */
-const ZK=['arar','gradear','rocar','pulverizar','adubar'];
-const pip=(p,c)=>{let r=false;for(let i=0,j=c.length-1;i<c.length;j=i++)if((c[i][1]>p[1])!==(c[j][1]>p[1])&&p[0]<(c[j][0]-c[i][0])*(p[1]-c[i][1])/(c[j][1]-c[i][1])+c[i][0])r=!r;return r};
-const sint=(a,b,c,d)=>{const o=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);return o(a,b,c)*o(a,b,d)<0&&o(c,d,a)*o(c,d,b)<0};
-function overl(a,b){if(a.some(q=>pip(q,b))||b.some(q=>pip(q,a)))return 1;for(let i=0;i<a.length;i++)for(let j=0;j<b.length;j++)if(sint(a[i],a[(i+1)%a.length],b[j],b[(j+1)%b.length]))return 1;return 0}
-const zBlock=t=>S.zones.filter(z=>(z.blk||[]).includes(t));
-function zoneGuard(p,type){if(!p)return true;const bad=zBlock(type).filter(z=>overl(p.c,z.c));return !bad.length||confirm('ATENÇÃO: '+NOME[type]+' é restrita em: '+bad.map(z=>z.name).join(', ')+'.\n'+bad.map(z=>z.note||'').filter(Boolean).join('\n')+'\nLançar mesmo assim?')}
-async function zoneDlg(z){const v=z||{blk:['pulverizar']};const r=await ask((z?'Editar':'Nova')+' área restrita',[{k:'name',l:'Nome (ex.: Canos rasos do pivô)',v:v.name},{k:'layer',l:'Camada',s:S.layers.map(x=>[x.id,x.name]),v:v.layer||S.al||'l0'},...ZK.map(k=>({k:'b_'+k,b:1,l:'Proibido: '+NOME[k],v:(v.blk||[]).includes(k)})),{k:'note',l:'Motivo (ex.: glifosato proibido no pasto; cano a 20 cm)',t:1,v:v.note}]);
- if(!r||!r.name.trim())return null;return{name:r.name.trim(),layer:r.layer,blk:ZK.filter(k=>r['b_'+k]),note:r.note}}
-async function zoneNew(c){const r=await zoneDlg(null);if(!r)return 0;S.zones.push(Object.assign({id:uid(),c},r));return 1}
-const _ap=addPt;addPt=function(lng,lat,s){_ap(lng,lat,s);if(T&&T.type){T.zw=T.zw||{};zBlock(T.type).forEach(z=>{if(!T.zw[z.id]&&pip([lng,lat],z.c)){T.zw[z.id]=1;toast('⚠ ÁREA RESTRITA: '+z.name+' — sem '+NOME[T.type]+(z.note?' ('+z.note+')':''));try{navigator.vibrate&&navigator.vibrate([300,120,300])}catch(e){}}})}};
-const _so=saveOp;saveOp=function(t,ex){const r=_so(t,ex);try{const bad=zBlock(t.type).filter(z=>t.pts.some(q=>pip(q,z.c)));if(bad.length)setTimeout(()=>toast('⚠ O trajeto passou por área restrita: '+bad.map(z=>z.name).join(', ')+'. Confira.'),3400)}catch(e){}return r};
-$('bZone').onclick=()=>{if(T)return toast('Finalize a gravação antes de desenhar.');$('bPoly').click();drawKind='z';curs();drawBar();toast('Marque os cantos da área restrita e toque em Fechar.')};
-
-/* --- demarcar com GPS (a pe, cavalo, veiculo) --- */
-async function walkStart(){if(T)return toast('Finalize a gravação antes.');if(!navigator.geolocation)return toast('GPS indisponível.');
- const r=await ask('Demarcar com GPS',[{k:'kind',l:'O que demarcar',s:[['p','Piquete'],['e','Estrutura'],['z','Área restrita'],['l','Linha (tubulação/fiação)']],v:'p'},{k:'how',l:'Como vai percorrer',s:[['3','A pé (ponto a cada 3 m)'],['6','A cavalo (a cada 6 m)'],['10','Veículo (a cada 10 m)']],v:'3'},{k:'acc',l:'Ignorar leituras com precisão pior que (m)',v:'15'}]);if(!r)return;
- cancelDraw();drawKind=r.kind;mode='poly';walk={int:+r.how,acc:num(r.acc)||15};drawBar();
- try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(l=>{if(walk)walk.wl=l}).catch(()=>{})}catch(e){}
- walk.id=navigator.geolocation.watchPosition(p=>{if(!walk)return;const c=p.coords;me={lng:c.longitude,lat:c.latitude,acc:c.accuracy};if(c.accuracy>walk.acc){toast('Aguardando sinal melhor: ±'+Math.round(c.accuracy)+' m');draw();return}const g=[c.longitude,c.latitude],l=draft[draft.length-1];if(!l||dist(l,g)>=walk.int){draft.push(g);drawBar()}V.lng=g[0];V.lat=g[1];if(V.z<17)V.z=18;draw()},er=>toast('Erro de GPS: '+er.message),{enableHighAccuracy:true,maximumAge:0});
- toast('Caminhe pelo contorno. “Desfazer” tira o último ponto; toque em Fechar ao terminar.')}
-function stopWalk(){if(!walk)return;try{navigator.geolocation.clearWatch(walk.id)}catch(e){}try{walk.wl&&walk.wl.release()}catch(e){}walk=null}
-$('bWalk').onclick=walkStart;
-
-/* --- selecao --- */
-const dseg=(x,y,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy||1)));return Math.hypot(a[0]+t*dx-x,a[1]+t*dy-y)};
-function hit(x,y){let r=null;S.points.forEach(p=>{if(p.hide||!lOn(p)||S.lay.m===false||S.fm[p.type]===false)return;const s=sp(p.lng,p.lat);if(Math.hypot(s[0]-x,s[1]-y)<20)r='m:'+p.id});if(r)return r;
- S.lines.forEach(l=>{if(!lOn(l)||S.lay.l===false)return;for(let i=1;i<l.c.length;i++)if(dseg(x,y,sp(...l.c[i-1]),sp(...l.c[i]))<10)r='l:'+l.id});if(r)return r;
- sortL(S.paddocks).forEach(p=>{if(vis(p)&&lOn(p)&&inPoly(x,y,p.c))r='p:'+p.id});if(r)return r;
- S.zones.forEach(z=>{if(lOn(z)&&S.lay.z!==false&&inPoly(x,y,z.c))r='z:'+z.id});return r}
-function boxSel(b){const x0=Math.min(b.x0,b.x1),x1=Math.max(b.x0,b.x1),y0=Math.min(b.y0,b.y1),y1=Math.max(b.y0,b.y1),cross=b.x1<b.x0,ins=s=>s[0]>=x0&&s[0]<=x1&&s[1]>=y0&&s[1]<=y1,ok=c=>{const a=c.map(q=>sp(q[0],q[1]));return cross?a.some(ins):a.every(ins)};
- if(!b.add)SEL.clear();
- S.points.forEach(p=>{if(!p.hide&&lOn(p)&&S.lay.m!==false&&S.fm[p.type]!==false&&ins(sp(p.lng,p.lat)))SEL.add('m:'+p.id)});
- S.paddocks.forEach(p=>{if(vis(p)&&lOn(p)&&ok(p.c))SEL.add('p:'+p.id)});
- S.lines.forEach(l=>{if(lOn(l)&&S.lay.l!==false&&ok(l.c))SEL.add('l:'+l.id)});
- S.zones.forEach(z=>{if(lOn(z)&&S.lay.z!==false&&ok(z.c))SEL.add('z:'+z.id)})}
-function selAll(){S.paddocks.forEach(p=>{if(vis(p)&&lOn(p))SEL.add('p:'+p.id)});S.points.forEach(p=>{if(!p.hide&&lOn(p))SEL.add('m:'+p.id)});S.lines.forEach(l=>{if(lOn(l))SEL.add('l:'+l.id)});S.zones.forEach(z=>{if(lOn(z))SEL.add('z:'+z.id)});selUI()}
-function selUI(){[...SEL].forEach(s=>{if(!getEl(s))SEL.delete(s)});const n=SEL.size;$('sbar').classList.toggle('on',n>0&&!mode&&!T);$('sN').textContent=n+' selecionado(s)';draw()}
-function toggleSel(){selMode=!selMode;$('bSel').classList.toggle('on',selMode);$('bSelF').classList.toggle('on',selMode);cv.style.cursor=selMode?'crosshair':'grab';toast(selMode?'Seleção: toque nos itens ou arraste uma caixa. Ctrl soma.':'Seleção desligada.')}
-$('bSel').onclick=$('bSelF').onclick=toggleSel;$('bAll').onclick=selAll;$('sClr').onclick=()=>{SEL.clear();selUI()};
-const mw=$('mapw');
-mw.addEventListener('pointerdown',e=>{if(e.target!==cv||mode||T||(e.pointerType==='mouse'&&e.button>0))return;const add=e.ctrlKey||e.metaKey;if(!(selMode||add))return;e.stopPropagation();cv.setPointerCapture(e.pointerId);box={x0:e.offsetX,y0:e.offsetY,x1:e.offsetX,y1:e.offsetY,add,id:e.pointerId,mv:0}},true);
-mw.addEventListener('pointermove',e=>{if(!box||e.pointerId!==box.id)return;e.stopPropagation();box.x1=e.offsetX;box.y1=e.offsetY;if(Math.hypot(box.x1-box.x0,box.y1-box.y0)>6)box.mv=1;draw()},true);
-const bUp=e=>{if(!box||e.pointerId!==box.id)return;e.stopPropagation();const b=box;box=null;if(e.type==='pointerup'){if(b.mv)boxSel(b);else{const h=hit(b.x0,b.y0);if(h){if(b.add||selMode)SEL.has(h)?SEL.delete(h):SEL.add(h);else{SEL.clear();SEL.add(h)}}else if(!b.add)SEL.clear()}}selUI()};
-mw.addEventListener('pointerup',bUp,true);mw.addEventListener('pointercancel',bUp,true);
-function delSel(){if(!SEL.size)return;if(!confirm('Excluir '+SEL.size+' item(ns) selecionado(s)? Dá para desfazer logo depois (Ctrl+Z).'))return;snapS();delIds([...SEL]);SEL.clear();save();render();toast('Excluído. Ctrl+Z desfaz.')}
-async function grpSel(){const it=selItems();if(it.length<2)return toast('Selecione 2 ou mais itens (Ctrl+clique ou caixa).');
- const r=await ask('Agrupar '+it.length+' itens',[{k:'n',l:'Nome do grupo (ex.: Curral e anexos, Lote 1)',v:''},{k:'lote',b:1,l:'É um lote de aspersores',v:it.every(x=>x.o.type==='aspersor')}]);if(!r||!r.n.trim())return;
- const id=uid();it.forEach(x=>x.o.gid=id);S.groups.push({id,name:r.n.trim(),lote:r.lote?1:0,vis:1});save();render();toast('Grupo criado.')}
-$('bGrp').onclick=$('sGrp').onclick=grpSel;$('sDel').onclick=delSel;
-$('sLay').onclick=async()=>{const r=await ask('Mover para camada',[{k:'l',l:'Camada',s:S.layers.map(x=>[x.id,x.name]),v:S.al||'l0'}]);if(!r)return;selItems().forEach(x=>x.o.layer=r.l);save();render()};
-function clearCat(k){const L={p:()=>S.paddocks.filter(p=>p.kind!=='e').map(o=>'p:'+o.id),e:()=>S.paddocks.filter(p=>p.kind==='e').map(o=>'p:'+o.id),m:()=>S.points.filter(p=>p.type!=='aspersor').map(o=>'m:'+o.id),a:()=>S.points.filter(p=>p.type==='aspersor').map(o=>'m:'+o.id),l:()=>S.lines.map(o=>'l:'+o.id),z:()=>S.zones.map(o=>'z:'+o.id)};
- if(k==='o'||k==='g'){const n=(k==='o'?S.ops:S.gastos).length;if(!n)return toast('Nada para limpar.');if(!confirm('Apagar '+n+' registro(s)?'))return;snapS();if(k==='o')S.ops=[];else S.gastos=[]}
- else{const ids=L[k]();if(!ids.length)return toast('Nada para limpar.');if(!confirm('Apagar '+ids.length+' item(ns) desta categoria?'))return;snapS();delIds(ids)}
- save();render();toast('Categoria limpa. “Desfazer exclusão” reverte.')}
-$('bClr').onclick=()=>clearCat($('clK').value);$('bUnd').onclick=undoDel;
-
-/* --- pesquisa --- */
-function search(t){const q=t.toLowerCase(),R=[],has=s=>String(s||'').toLowerCase().includes(q),A=(l,s,f)=>R.push({l,s,f});
- const m=t.match(/^\s*(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)\s*$/);if(m){const la=num(m[1]),lo=num(m[2]);if(okLL([lo,la]))A('Ir para '+la+', '+lo,'Coordenadas',()=>{FIND=[lo,la];V.lng=lo;V.lat=la;V.z=Math.max(V.z,17);draw()})}
- S.groups.forEach(g=>{if(has(g.name))A(g.name,(g.lote?'Lote':'Grupo')+' · '+memb(g).length+' itens',()=>goSel(memb(g)))});
- S.paddocks.forEach(p=>{if(has(p.name)||has(p.obs)||has((FN[p.fn]||[])[0]))A(p.name,(p.kind==='e'?'Estrutura':'Piquete')+' · '+ha(pArea(p.c)),()=>goSel(['p:'+p.id]))});
- S.points.forEach(p=>{if(has(p.name)||has(p.obs)||has((PT[p.type]||[])[2]))A(p.name,(PT[p.type]||PT.outro)[2],()=>goSel(['m:'+p.id]))});
- S.lines.forEach(l=>{if(has(l.name)||has(l.obs))A(l.name,l.kind==='fio'?'Fiação':'Tubulação',()=>goSel(['l:'+l.id]))});
- S.zones.forEach(z=>{if(has(z.name)||has(z.note))A(z.name,'Área restrita',()=>goSel(['z:'+z.id]))});return R}
-function qList(){$('qr').innerHTML=SRC.slice(0,12).map((r,i)=>`<div class="li"><div class="t"><b>${esc(r.l)}</b><small>${esc(r.s)}</small></div><button class="btn s" data-qi="${i}">Ir</button></div>`).join('')}
-$('q').oninput=()=>{const t=$('q').value.trim();SRC=t?search(t):[];qList();if(t)$('qr').insertAdjacentHTML('beforeend','<button class="btn s" data-qw="1" style="margin:6px 0">Buscar “'+esc(t)+'” na internet (endereço/lugar)</button>')};
-$('q').onkeydown=e=>{if(e.key==='Enter'&&SRC[0])SRC[0].f();if(e.key==='Escape'){$('q').value='';SRC=[];qList();$('q').blur()}};
-async function webQ(t){if(!t)return;try{toast('Buscando...');const r=await(await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=6&q='+encodeURIComponent(t))).json();if(!r.length)return toast('Nada encontrado.');
- SRC=r.map(x=>({l:x.display_name.split(',').slice(0,2).join(','),s:x.display_name,f:()=>{FIND=[+x.lon,+x.lat];V.lng=FIND[0];V.lat=FIND[1];V.z=Math.max(V.z,16);draw()}}));qList()}catch(e){toast('Sem internet ou busca indisponível.')}}
-
-/* --- desenho por cima: areas restritas, medidas, selecao --- */
-function hatch(){if(!HP){const c=document.createElement('canvas');c.width=c.height=14;const x=c.getContext('2d');x.fillStyle='rgba(255,59,48,.18)';x.fillRect(0,0,14,14);x.strokeStyle='rgba(255,59,48,.85)';x.lineWidth=2;x.beginPath();x.moveTo(0,14);x.lineTo(14,0);x.stroke();HP=ctx.createPattern(c,'repeat')}return HP}
-function dims(c,close){const n=c.length,e=close?n:n-1;for(let i=0;i<e;i++){const a=c[i],b=c[(i+1)%n],s=sp(a[0],a[1]),t=sp(b[0],b[1]);if(Math.hypot(s[0]-t[0],s[1]-t[1])<46)continue;ctx.fillText(fmt(dist(a,b),1)+' m',(s[0]+t[0])/2,(s[1]+t[1])/2-5)}}
-function pill(t){ctx.shadowBlur=0;ctx.font='600 13px system-ui';const w=ctx.measureText(t).width+20;ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(W/2-w/2,10,w,26);ctx.fillStyle='#fff';ctx.fillText(t,W/2,28)}
-function drawTop(){ctx.setTransform(dpr,0,0,dpr,0,0);ctx.textAlign='center';ctx.font='600 12px system-ui';
- S.zones.forEach(z=>{if(!lOn(z)||S.lay.z===false||(mode==='edit'&&edit.p===z))return;path(z.c,true);ctx.fillStyle=hatch();ctx.fill();ctx.strokeStyle='#ff3b30';ctx.setLineDash([10,6]);ctx.lineWidth=2.5;ctx.stroke();ctx.setLineDash([]);
-  const a=z.c.reduce((s,q)=>[s[0]+q[0]/z.c.length,s[1]+q[1]/z.c.length],[0,0]),s=sp(a[0],a[1]);ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText('🚫 '+z.name,s[0],s[1]);ctx.fillText('sem: '+(z.blk||[]).map(k=>NOME[k]).join(', '),s[0],s[1]+15);ctx.shadowBlur=0});
- ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;
- if(S.dim){S.paddocks.forEach(p=>{if(vis(p)&&lOn(p)&&!p.sDim&&!(mode==='edit'&&edit.p===p))dims(p.c,1)});S.zones.forEach(z=>{if(lOn(z)&&S.lay.z!==false)dims(z.c,1)});S.lines.forEach(l=>{if(lOn(l)&&S.lay.l!==false)dims(l.c,0)})}
- const dr=mode==='edit'?edit.c:mode==='poly'?draft:null;
- if(dr&&dr.length){const poly=mode==='edit'||(drawKind!=='l'&&drawKind!=='a'&&dr.length>2);dims(dr,mode==='edit');
-  if(mode==='poly'&&HV){const a=dr[dr.length-1],s=sp(a[0],a[1]),t=sp(HV[0],HV[1]);ctx.fillText(fmt(dist(a,HV),1)+' m',(s[0]+t[0])/2,(s[1]+t[1])/2-6)}
-  if(dr.length>1){let L=0;for(let i=1;i<dr.length;i++)L+=dist(dr[i-1],dr[i]);if(poly)L+=dist(dr[dr.length-1],dr[0]);pill(poly?'Perímetro '+fmt(L,1)+' m · Área '+ha(pArea(dr)):'Comprimento '+fmt(L,1)+' m')}}
- ctx.shadowBlur=0;ctx.setLineDash([]);ctx.strokeStyle='#ffd400';ctx.lineWidth=4;
- selItems().forEach(({k,o})=>{if(k==='m'){const s=sp(o.lng,o.lat);ctx.beginPath();ctx.arc(s[0],s[1],21,0,7);ctx.stroke()}else{path(o.c,k!=='l');ctx.stroke()}});
- if(FIND){const s=sp(FIND[0],FIND[1]);ctx.beginPath();ctx.arc(s[0],s[1],9,0,7);ctx.fillStyle='#ff3b30';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke()}
- if(box&&box.mv){const x=Math.min(box.x0,box.x1),y=Math.min(box.y0,box.y1),w=Math.abs(box.x1-box.x0),h=Math.abs(box.y1-box.y0),cr=box.x1<box.x0;ctx.fillStyle=cr?'rgba(80,200,120,.18)':'rgba(60,140,255,.18)';ctx.strokeStyle=cr?'#4cc38a':'#3c8cff';ctx.lineWidth=1.5;ctx.setLineDash(cr?[6,4]:[]);ctx.fillRect(x,y,w,h);ctx.strokeRect(x,y,w,h);ctx.setLineDash([])}}
-$('bDim').onclick=()=>{S.dim=!S.dim;save();$('bDim').classList.toggle('on',!!S.dim);draw()};
-
-/* --- listas, grupos, camadas --- */
-const _r4=render;render=function(){_r4();myRender()};
-function myRender(){S.groups=S.groups||[];S.zones=S.zones||[];S.ov=S.ov||[];
- S.points.forEach(p=>{if(p.type==='aspersor'&&p.grp&&!p.gid)p.gid=p.grp});
- const used=new Set([...S.paddocks,...S.points,...S.lines,...S.zones].map(o=>o.gid).filter(Boolean));
- used.forEach(id=>{if(!S.groups.some(g=>g.id===id)){const f=S.points.find(p=>p.gid===id),a=f&&f.type==='aspersor';S.groups.push({id,name:a?'Lote '+String(f.name).replace(/\s*\d+$/,''):'Grupo',lote:a?1:0,vis:1})}});
- S.groups=S.groups.filter(g=>used.has(g.id));HG.clear();S.groups.forEach(g=>{if(g.vis===0)HG.add(g.id)});
- $('lGrp').innerHTML=S.groups.map(g=>`<div class="li"><span style="font-size:20px">${g.lote?'🌀':'🗂️'}</span><div class="t"><b>${esc(g.name)}</b><small>${memb(g).length} itens${g.lote?' · lote de aspersores':''}</small></div><div class="acts"><button class="btn s" data-gs="${g.id}">Selecionar</button><button class="btn s" data-gh="${g.id}">${g.vis===0?'Mostrar':'Ocultar'}</button><button class="btn s" data-gr="${g.id}">Nome</button><button class="btn s dn" data-gx="${g.id}">Excluir</button></div></div>`).join('')||'<div class="empty">Nenhum grupo. Selecione itens (⬚ ou Ctrl+clique) e toque em “Agrupar seleção”. Linhas de aspersores viram lotes sozinhas.</div>';
- $('lZ').innerHTML=S.zones.map(z=>`<div class="li"><span style="font-size:20px">🚫</span><div class="t"><b>${esc(z.name)}</b><small>${ha(pArea(z.c))} · sem ${(z.blk||[]).map(k=>NOME[k]).join(', ')||'—'}${z.note?' · '+esc(z.note):''}</small></div><div class="acts"><button class="btn s" data-zv="${z.id}">Ver</button><button class="btn s" data-ze="${z.id}">Editar</button><button class="btn s" data-zf="${z.id}">Forma</button><button class="btn s dn" data-zx="${z.id}">Excluir</button></div></div>`).join('')||'<div class="empty">Nenhuma área restrita. Use “Área restrita” (tecla R).</div>';
- $('lOv').innerHTML=S.ov.map(o=>`<div class="li"><div class="t"><b>${esc(o.name)}</b><small>Foto de drone · opacidade</small><input type="range" min="10" max="100" value="${Math.round((o.op??.85)*100)}" data-ovo="${o.id}"></div><div class="acts"><button class="btn s" data-ovv="${o.id}">Ver</button><button class="btn s" data-ovh="${o.id}">${o.vis===0?'Mostrar':'Ocultar'}</button><button class="btn s" data-ovp="${o.id}">Posição</button><button class="btn s dn" data-ovx="${o.id}">X</button></div></div>`).join('');
- document.querySelectorAll('[data-lx]').forEach(b=>b.insertAdjacentHTML('afterend','<button class="btn s dn" data-lxe="'+b.dataset.lx+'">Excluir c/ itens</button>'));
- const c=document.querySelector('#lLay .chips');if(c&&!c.querySelector('[data-lay="z"]'))c.insertAdjacentHTML('beforeend','<div class="chip '+(S.lay.z===false?'off':'')+'" data-lay="z">Áreas restritas</div>');
- $('bDim').classList.toggle('on',!!S.dim);selUI()}
-document.body.addEventListener('click',async e=>{const d=e.target.closest('[data-gs],[data-gh],[data-gr],[data-gx],[data-lxe],[data-ovv],[data-ovh],[data-ovp],[data-ovx],[data-zv],[data-ze],[data-zf],[data-zx],[data-qi],[data-qw]');if(!d)return;const x=d.dataset;
- if(x.qi!=null){SRC[+x.qi].f();return}if(x.qw!=null){webQ($('q').value.trim());return}
- const g=S.groups.find(g=>g.id===(x.gs||x.gh||x.gr||x.gx)),o=S.ov.find(o=>o.id===(x.ovv||x.ovh||x.ovp||x.ovx)),z=S.zones.find(z=>z.id===(x.zv||x.ze||x.zf||x.zx));
- if(x.gs){goSel(memb(g));return}
- if(x.gh)g.vis=g.vis===0?1:0;
- if(x.gr){const r=await ask('Nome do grupo',[{k:'n',l:'Nome',v:g.name}]);if(r&&r.n.trim())g.name=r.n.trim()}
- if(x.gx){const r=await ask('Excluir “'+g.name+'”',[{k:'m',l:'O que fazer',s:[['g','Só desfazer o grupo (manter os itens)'],['t','Excluir o grupo E todos os itens dele']],v:'g'}]);if(!r)return;snapS();const ids=memb(g);if(r.m==='t')delIds(ids);else ids.forEach(s=>delete getEl(s).gid);S.groups=S.groups.filter(q=>q!==g)}
- if(x.lxe){const l=S.layers.find(l=>l.id===x.lxe);if(!l||!confirm('Excluir a camada “'+l.name+'” E todos os itens dela?'))return;snapS();delIds([['p',S.paddocks],['m',S.points],['l',S.lines],['z',S.zones]].flatMap(([k,a])=>a.filter(i=>(i.layer||'l0')===x.lxe).map(i=>k+':'+i.id)));S.layers=S.layers.filter(q=>q!==l);if(S.al===x.lxe)S.al='l0'}
- if(x.ovv){fitPts([[o.b.w,o.b.n],[o.b.e,o.b.s]]);return}
- if(x.ovh)o.vis=o.vis===0?1:0;
- if(x.ovp){if(!(await ovDlg(o,0)))return}
- if(x.ovx){if(!confirm('Remover esta foto de drone?'))return;gop('img','readwrite',s=>s.delete(o.id)).catch(()=>0);delete OVI[o.id];S.ov=S.ov.filter(q=>q!==o)}
- if(x.zv){fitPts(z.c);return}
- if(x.ze){const r=await zoneDlg(z);if(r)Object.assign(z,r);else return}
- if(x.zf){cancelDraw();mode='edit';edit={p:z,c:z.c.map(q=>q.slice()),u:[],mv:0,sel:null};fitPts(z.c);drawBar();toast('Arraste os cantos e toque em Salvar.');return}
- if(x.zx){if(!confirm('Excluir esta área restrita?'))return;snapS();S.zones=S.zones.filter(q=>q!==z)}
- save();render()});
-
-/* --- atalhos de teclado --- */
-addEventListener('keydown',e=>{const t=document.activeElement&&document.activeElement.tagName;if(/INPUT|TEXTAREA|SELECT/.test(t)||$('dlg').open)return;const k=e.key.toLowerCase(),c=e.ctrlKey||e.metaKey,dw=mode==='poly'||mode==='edit'||mode==='mvpt';
- if(k==='enter'){if(dw&&!$('bDone').disabled){e.preventDefault();$('bDone').click()}return}
- if(c){const f={a:selAll,z:()=>dw?$('bUndo').click():undoDel(),g:grpSel,f:()=>$('q').focus(),s:()=>$('bBk').click()}[k];if(f){e.preventDefault();f()}return}
- if(k==='delete'||k==='backspace'){e.preventDefault();if(dw&&mode==='poly')$('bUndo').click();else if(SEL.size)delSel();return}
- if(k==='escape'){SEL.clear();if(selMode)toggleSel();selUI();return}
- if(k==='/'){e.preventDefault();$('q').focus();return}
- if(k==='?'){const d=$('kbH');d.open=true;d.scrollIntoView({block:'center'});return}
- if(k==='+'||k==='='){zoomAt(W/2,H/2,V.z+1);return}if(k==='-'){zoomAt(W/2,H/2,V.z-1);return}
- if(k==='f'){$('bFit').click();return}if(k==='d'){$('bDim').click();return}if(k==='s'){toggleSel();return}
- const m={p:'bPoly',e:'bStr',m:'bPt',l:'bLine',a:'bAsp',r:'bZone',g:'bWalk'}[k];if(m&&!dw&&!T){e.preventDefault();$(m).click()}});
-ovLoad();if(MIG)flush();
-
 addEventListener('resize',resize);resize();render();fit();
-})();
+
+/* ===== v5: IndexedDB, areas restritas, selecao, busca, GPS a pe, medidas, provedor ===== */
+function ns(){S.paddocks=S.paddocks||[];S.points=S.points||[];S.ops=S.ops||[];S.plan=S.plan||[];S.lines=S.lines||[];S.gastos=S.gastos||[];S.filt=S.filt||{};S.lay=S.lay||{};S.fm=S.fm||{};S.offline=S.offline||[];S.restr=S.restr||[];S.terras=S.terras||[];S.drones=S.drones||[];S.prov=S.prov||{t:'esri'};if(!S.layers||!S.layers.length)S.layers=[{id:'l0',name:'Fazenda',vis:1}]}
+const kv=(m,fn)=>db().then(d=>new Promise((ok,no)=>{const t=d.transaction('k',m),r=fn(t.objectStore('k'));t.oncomplete=()=>ok(r.result);t.onerror=()=>no(t.error)}));
+document.head.insertAdjacentHTML('beforeend','<style>#sbar{position:absolute;left:10px;right:64px;bottom:10px;z-index:6;display:none;gap:8px;flex-wrap:wrap}#sbar.on{display:flex}#sbar .btn{flex:1;min-width:84px;padding:13px 8px;box-shadow:0 2px 8px #0007}#sCount{width:100%;color:#fff;font-weight:700;text-shadow:0 1px 3px #000}</style>');
+$('mapw').insertAdjacentHTML('beforeend','<div id="sbar"><div id="sCount"></div><button class="btn pri" id="sMov">Mover p/ camada</button><button class="btn dn" id="sDel">Excluir</button><button class="btn" id="sClr">Limpar seleção</button></div>');
+{const r=document.createElement('div');r.className='row';r.innerHTML='<button class="btn" id="bRes">⛔ Área restrita</button><button class="btn" id="bWalk">🚶 Demarcar andando</button><button class="btn" id="bSel">▭ Selecionar</button>';$('bPt').parentNode.after(r)}
+$('s-map').insertAdjacentHTML('afterbegin','<input id="q" placeholder="🔎 Pesquisar piquete, linha, marcador, área..." style="margin-bottom:6px"><div id="qr"></div>');
+$('lL').insertAdjacentHTML('afterend','<h3>Áreas restritas</h3><div id="lR"></div>');$('lCam').insertAdjacentHTML('afterend','<div id="lClr"></div>');
+$('bStart').insertAdjacentHTML('beforebegin','<div id="rwarn"></div>');
+$('nz').insertAdjacentHTML('beforeend','<option>20</option><option>21</option><option>22</option>');
+$('nz').closest('.row').insertAdjacentHTML('beforebegin','<h3>Provedor do satélite</h3><div class="row"><select id="pv"><option value="esri">Esri (grátis, sem chave)</option><option value="mapbox">Mapbox (chave própria)</option><option value="maptiler">MapTiler (chave própria)</option><option value="clarity">Esri Clarity (grátis; foto mais antiga, às vezes mais nítida)</option><option value="custom">Personalizado (URL XYZ)</option></select></div><div class="row"><input id="pk" placeholder="Chave de acesso, ou URL com {z}/{x}/{y}"></div>');
+
+/* provedor */
+function applyProv(){const P=S.prov||{t:'esri'},k=P.k||'';let u=SAT;if(P.t==='mapbox'&&k)u='https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg90?access_token='+encodeURIComponent(k);else if(P.t==='maptiler'&&k)u='https://api.maptiler.com/tiles/satellite-v2/{z}/{x}/{y}.jpg?key='+encodeURIComponent(k);else if(P.t==='clarity')u='https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';else if(P.t==='custom'&&k.includes('{z}'))u=k;TL.sat=[u];TL.hyb=[u,TL.hyb[1]];cache.clear();ZL=0;pKey='';draw()}
+const pvUI=()=>{$('pv').value=S.prov.t;$('pk').value=S.prov.k||'';$('nz').value=NZ};
+$('pv').onchange=()=>{S.prov={t:$('pv').value,k:$('pk').value.trim()};const d={esri:20,clarity:20,mapbox:20,maptiler:19}[S.prov.t];if(d){NZ=d;S.nz=d;$('nz').value=d}save();applyProv()};
+$('pk').onchange=()=>{S.prov.k=$('pk').value.trim();save();applyProv();toast('Provedor atualizado.')};
+
+/* areas restritas */
+let _h;function hatch(){if(!_h){const c=document.createElement('canvas');c.width=c.height=14;const x=c.getContext('2d');x.strokeStyle='#ff3b30';x.lineWidth=3;x.beginPath();x.moveTo(-2,16);x.lineTo(16,-2);x.stroke();_h=ctx.createPattern(c,'repeat')}return _h}
+const cs=()=>$('opType')?$('opType').value:'';
+const rOn=r=>!r.hide&&lOn(r)&&S.lay.r!==false;
+function drawRs(){ctx.save();ctx.textAlign='center';ctx.font='600 13px system-ui';
+ S.restr.forEach(r=>{if(!rOn(r))return;const rel=(r.serv||[]).includes(cs());path(r.c,true);ctx.globalAlpha=rel?.5:.22;ctx.fillStyle=hatch();ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle='#ff3b30';ctx.lineWidth=rel?5:2.5;ctx.setLineDash([9,6]);ctx.stroke();ctx.setLineDash([]);
+  const a=r.c.reduce((s,q)=>[s[0]+q[0]/r.c.length,s[1]+q[1]/r.c.length],[0,0]),s=sp(a[0],a[1]);ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=5;ctx.fillText('⛔ '+r.name,s[0],s[1]);ctx.fillText('Proibido: '+(r.serv||[]).map(t=>NOME[t]).join(', '),s[0],s[1]+16);ctx.shadowBlur=0});
+ if(S.dimAll){ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;const sd=(c,cl)=>{for(let i=0;i<(cl?c.length:c.length-1);i++){const q=c[i],r=c[(i+1)%c.length],m=sp((q[0]+r[0])/2,(q[1]+r[1])/2);ctx.fillText(fmt(dist(q,r),0)+' m',m[0],m[1])}};
+  S.paddocks.forEach(p=>{if(vis(p)&&lOn(p))sd(p.c,1)});S.lines.forEach(l=>{if(lOn(l)&&S.lay.l!==false)sd(l.c,0)});S.restr.forEach(r=>{if(rOn(r))sd(r.c,1)})}
+ ctx.restore()}
+async function resDlg(r){const v=r||{},f=[{k:'name',l:'Nome (ex.: Pasto da frente)',v:v.name},{k:'layer',l:'Camada',s:S.layers.map(x=>[x.id,x.name]),v:v.layer||S.al||'l0'}];
+ Object.keys(NOME).forEach(t=>f.push({k:'s_'+t,b:1,l:'Proibido: '+NOME[t],v:(v.serv||[]).includes(t)}));f.push({k:'obs',l:'Motivo (ex.: glifosato mata o capim; cano raso a 30 cm)',t:1,v:v.obs});
+ const o=await ask((r?'Editar':'Nova')+' área restrita',f);if(!o||!o.name.trim())return null;const serv=Object.keys(NOME).filter(t=>o['s_'+t]);if(!serv.length){toast('Marque ao menos um serviço proibido.');return null}return{name:o.name.trim(),layer:o.layer,serv,obs:o.obs}}
+function inP(pt,c){let r=false;for(let i=0,j=c.length-1;i<c.length;j=i++)if((c[i][1]>pt[1])!==(c[j][1]>pt[1])&&pt[0]<(c[j][0]-c[i][0])*(pt[1]-c[i][1])/(c[j][1]-c[i][1])+c[i][0])r=!r;return r}
+function checkR(pt){const t=T&&T.type,h=S.restr.find(r=>rOn(r)&&(r.serv||[]).includes(t)&&inP(pt,r.c));$('hud').style.background=h?'#b71c1c':'';
+ if(h&&Date.now()-(checkR.t||0)>5000){checkR.t=Date.now();navigator.vibrate&&navigator.vibrate([300,150,300]);toast('⛔ ÁREA RESTRITA: '+NOME[t]+' proibido em “'+h.name+'”')}}
+function updWarn(){const t=cs(),a=S.restr.filter(r=>rOn(r)&&(r.serv||[]).includes(t));$('rwarn').innerHTML=a.length?`<div style="background:#b71c1c;color:#fff;padding:10px;border-radius:8px;margin-bottom:8px;font-weight:600">⛔ ${a.length} área(s) restrita(s) para ${esc(NOME[t])}: ${a.map(r=>esc(r.name)).join(', ')}</div>`:'';draw()}
+$('opType').addEventListener('change',updWarn);
+$('bRes').onclick=()=>{$('bPoly').click();if(mode==='poly'){drawKind='r';toast('Marque os cantos da área restrita.')}};
+
+/* seleção por arrasto */
+var SEL=new Set();
+const SK={p:()=>S.paddocks,m:()=>S.points,l:()=>S.lines,r:()=>S.restr,t:()=>S.terras};
+const selItems=()=>[...SEL].map(k=>SK[k[0]]().find(o=>o.id===k.slice(2))).filter(Boolean);
+const selBar=()=>{$('sbar').classList.toggle('on',mode==='sel');$('sCount').textContent=SEL.size+' selecionado(s)'};
+const inR=(s,b)=>s[0]>=Math.min(b[0],b[2])&&s[0]<=Math.max(b[0],b[2])&&s[1]>=Math.min(b[1],b[3])&&s[1]<=Math.max(b[1],b[3]);
+function finishSel(b){const tp=Math.abs(b[0]-b[2])<30,cx=(b[0]+b[2])/2,cy=(b[1]+b[3])/2,hit=(c,cl)=>c.some(q=>inR(sp(q[0],q[1]),b))||(tp&&cl&&inPoly(cx,cy,c));
+ S.paddocks.forEach(p=>{if(vis(p)&&lOn(p)&&hit(p.c,1))SEL.add('p:'+p.id)});S.lines.forEach(l=>{if(lOn(l)&&S.lay.l!==false&&hit(l.c,0))SEL.add('l:'+l.id)});S.restr.forEach(r=>{if(rOn(r)&&hit(r.c,1))SEL.add('r:'+r.id)});
+ S.points.forEach(p=>{if(!p.hide&&lOn(p)&&S.lay.m!==false&&S.fm[p.type]!==false&&inR(sp(p.lng,p.lat),b))SEL.add('m:'+p.id)});selBar();draw()}
+function selDraw(){if(!SEL.size&&!(G&&G.box))return;ctx.save();ctx.strokeStyle='#ffe600';ctx.lineWidth=4;ctx.setLineDash([5,4]);
+ selItems().forEach(o=>{if(o.c){path(o.c,!S.lines.includes(o));ctx.stroke()}else{const s=sp(o.lng,o.lat);ctx.beginPath();ctx.arc(s[0],s[1],20,0,7);ctx.stroke()}});
+ if(G&&G.box&&mode==='sel'){const b=G.box;ctx.setLineDash([]);ctx.fillStyle='rgba(255,230,0,.15)';ctx.lineWidth=2;ctx.fillRect(b[0],b[1],b[2]-b[0],b[3]-b[1]);ctx.strokeRect(b[0],b[1],b[2]-b[0],b[3]-b[1])}ctx.restore()}
+$('bSel').onclick=()=>{if(T)return toast('Finalize a gravação antes.');if(mode==='sel'){mode=null;SEL.clear()}else{cancelDraw();mode='sel';toast('Arraste no mapa para selecionar. Para mover o mapa com o dedo, desligue Selecionar.')}$('bSel').classList.toggle('on',mode==='sel');selBar();draw()};
+$('sClr').onclick=()=>{SEL.clear();selBar();draw()};
+$('sDel').onclick=()=>{const n=SEL.size;if(n&&confirm('Excluir '+n+' elemento(s)?')){selItems().forEach(o=>{for(const k of['paddocks','points','lines','restr'])S[k]=S[k].filter(x=>x!==o)});SEL.clear();save();selBar();render()}};
+$('sMov').onclick=async()=>{if(!SEL.size)return;const r=await ask('Mover '+SEL.size+' elemento(s) para uma camada',[{k:'l',l:'Camada existente',s:S.layers.map(x=>[x.id,x.name]),v:S.al||'l0'},{k:'n',l:'Ou crie uma nova camada (ex.: Lote 1 de aspersores)'}]);if(!r)return;let id=r.l;if(r.n.trim()){id=uid();S.layers.push({id,name:r.n.trim(),vis:1})}selItems().forEach(o=>o.layer=id);SEL.clear();save();selBar();render()};
+
+/* GPS a pé, a cavalo ou de veículo */
+$('bWalk').onclick=async()=>{if(T)return toast('Finalize a gravação antes.');if(!navigator.geolocation)return toast('GPS indisponível.');
+ const r=await ask('Demarcar andando',[{k:'k',l:'O que você vai demarcar?',s:[['p','Piquete'],['e','Estrutura'],['l','Linha (tubulação, fiação...)'],['r','Área restrita']],v:'p'},{k:'i',l:'Um canto a cada quantos metros? (a pé: 3 a 5 · cavalo ou veículo: 8 a 15)',v:'5'}]);if(!r)return;
+ $('bPoly').click();drawKind=r.k;const iv=Math.max(1,parseFloat(String(r.i).replace(',','.'))||5);
+ window._w=navigator.geolocation.watchPosition(p=>{const c=p.coords;if(mode!=='poly'||c.accuracy>20)return;const g=[c.longitude,c.latitude],l=draft[draft.length-1];me={lng:g[0],lat:g[1],acc:c.accuracy};V.lng=g[0];V.lat=g[1];if(!l||dist(l,g)>=iv){draft.push(g);drawBar()}else draw()},()=>toast('Erro de GPS. Permita a localização.'),{enableHighAccuracy:true,maximumAge:0});
+ toast('Ande pelo contorno. Toque em Fechar quando terminar.')};
+
+/* busca */
+function fitPts(a){if(!a.length)return;const x=a.map(q=>q[0]),y=a.map(q=>q[1]);V.lng=(Math.min(...x)+Math.max(...x))/2;V.lat=(Math.min(...y)+Math.max(...y))/2;for(let z=tz();z>2;z-=.25){V.z=z;const s=a.map(q=>sp(q[0],q[1]));if(Math.max(...s.map(q=>Math.abs(q[0]-W/2)))<W/2-40&&Math.max(...s.map(q=>Math.abs(q[1]-H/2)))<H/2-40)break}draw()}
+function goTo(k){const t=k[0],o=SK[t]().find(x=>x.id===k.slice(2));if(!o)return;if(t==='m'){V.lng=o.lng;V.lat=o.lat;V.z=Math.max(V.z,18);draw()}else fitPts(o.c);$('q').value='';$('qr').innerHTML=''}
+$('q').oninput=()=>{const t=$('q').value.trim().toLowerCase();if(!t){$('qr').innerHTML='';return}
+ const a=[...S.paddocks.map(p=>['p:'+p.id,p.name,(p.kind==='e'?'Estrutura':'Piquete'),p.obs]),...S.lines.map(l=>['l:'+l.id,l.name,'Linha',l.obs]),...S.restr.map(r=>['r:'+r.id,r.name,r.line?'Linha restrita':'Área restrita',r.obs]),...S.terras.map(t=>['t:'+t.id,t.name,'Terra',t.obs]),...S.points.map(p=>['m:'+p.id,p.name,(PT[p.type]||PT.outro)[2],p.obs])].filter(x=>((x[1]||'')+' '+(x[3]||'')).toLowerCase().includes(t)).slice(0,8);
+ $('qr').innerHTML=a.map(x=>`<div class="li" data-go="${x[0]}" style="cursor:pointer"><div class="t"><b>${esc(x[1])}</b><small>${x[2]}</small></div></div>`).join('')||'<small style="color:var(--mut)">Nada encontrado.</small>'};
+
+/* listas, limpeza e ações */
+function rlists(){$('lR').innerHTML=S.restr.map(r=>`<div class="li"><span style="font-size:22px">⛔</span><div class="t"><b>${esc(r.name)}</b><small>Proibido: ${(r.serv||[]).map(t=>NOME[t]).join(', ')} · ${ha(pArea(r.c))}${r.obs?' · '+esc(r.obs):''}</small></div><div class="acts"><button class="btn s" data-rz="${r.id}">Ver</button><button class="btn s" data-re="${r.id}">Editar</button><button class="btn s" data-rh="${r.id}">${r.hide?'Mostrar':'Ocultar'}</button><button class="btn s dn" data-rd="${r.id}">Excluir</button></div></div>`).join('')||'<div class="empty">Nenhuma área restrita. Use “Área restrita” para marcar onde um serviço não pode ser feito.</div>';
+ $('lClr').innerHTML=`<h3>Medidas e limpeza</h3><div class="row"><button class="btn ${S.dimAll?'on':''}" data-dim="1">Medidas dos lados: ${S.dimAll?'ligadas':'desligadas'}</button></div>
+<div class="row"><select id="clr">${[['p','Todos os piquetes'],['e','Todas as estruturas'],['l','Todas as linhas'],['r','Todas as áreas restritas'],['m','Todos os marcadores'],...Object.keys(PT).map(k=>['m:'+k,'Marcadores: '+PT[k][2]]),['o','Todos os serviços registrados']].map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('')}</select><button class="btn dn" data-clr="1">Limpar categoria</button></div>
+<div class="row"><select id="dl">${S.layers.filter(l=>l.id!=='l0').map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join('')||'<option value="">(sem camadas extras)</option>'}</select><button class="btn dn" data-dlx="1">Excluir camada e elementos</button></div>`}
+document.body.addEventListener('click',async e=>{const d=e.target.closest('[data-rz],[data-re],[data-rh],[data-rd],[data-dim],[data-clr],[data-dlx],[data-go]');if(!d)return;const x=d.dataset;
+ if(x.go){goTo(x.go);return}
+ if(x.rz){fitPts(S.restr.find(r=>r.id===x.rz).c);return}
+ if(x.re){const r=S.restr.find(r=>r.id===x.re),o=await resDlg(r);if(o)Object.assign(r,o)}
+ if(x.rh){const r=S.restr.find(r=>r.id===x.rh);r.hide=!r.hide}
+ if(x.rd){if(!confirm('Excluir esta área restrita?'))return;S.restr=S.restr.filter(r=>r.id!==x.rd)}
+ if(x.dim)S.dimAll=!S.dimAll;
+ if(x.clr){const v=$('clr').value;let n=0,f;
+  if(v==='p'||v==='e'){const m=p=>(p.kind==='e')===(v==='e');n=S.paddocks.filter(m).length;f=()=>S.paddocks=S.paddocks.filter(p=>!m(p))}
+  else if(v==='l'){n=S.lines.length;f=()=>S.lines=[]}else if(v==='r'){n=S.restr.length;f=()=>S.restr=[]}else if(v==='t'){n=S.terras.length;f=()=>S.terras=[]}
+  else if(v==='m'){n=S.points.length;f=()=>S.points=[]}else if(v==='o'){n=S.ops.length;f=()=>S.ops=[]}
+  else{const t=v.slice(2);n=S.points.filter(p=>p.type===t).length;f=()=>S.points=S.points.filter(p=>p.type!==t)}
+  if(!n)return toast('Nada para apagar nessa categoria.');if(!confirm('Apagar '+n+' elemento(s)? Isso não pode ser desfeito.'))return;f()}
+ if(x.dlx){const id=$('dl').value;if(!id||!confirm('Excluir a camada e TODOS os elementos dela?'))return;['paddocks','points','lines','restr'].forEach(k=>S[k]=S[k].filter(o=>(o.layer||'l0')!==id));S.layers=S.layers.filter(l=>l.id!==id);if(S.al===id)S.al='l0'}
+ save();render()});
+const _r4=render;render=function(){ns();_r4();rlists();updWarn()};
+['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
+Promise.race([kv('readonly',s=>s.get('state')),new Promise((_,no)=>setTimeout(()=>no(new Error('t')),3500))]).then(j=>{if(j&&!localStorage.getItem(K)){S=JSON.parse(j);ns();NZ=S.nz||NZ}else{ns();save()}pvUI();applyProv();render();fit()}).catch(()=>{ns();pvUI();render()});
+setTimeout(()=>{if(navigator.onLine&&![...cache.values()].some(i=>i.ok))toast('As imagens do mapa não carregaram. Teste o botão “Mapa” (ruas), feche outras abas do app e recarregue. Se persistir, a rede pode estar bloqueando server.arcgisonline.com.')},9000);
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+
+/* ===== v6: zoom limitado, GPS nos dialogos, formas, terras, linha restrita, imagem de drone ===== */
+var shp=null;
+function maxZ(){return S.drones&&S.drones.length?Math.max(NZ,21):NZ}
+$('nz').addEventListener('change',()=>{V.z=Math.min(V.z,maxZ());draw()});
+{const r=document.createElement('div');r.className='row';r.innerHTML='<button class="btn" id="bShp">◇ Retângulo / círculo</button><button class="btn" id="bRl">🚫 Linha restrita</button><button class="btn" id="bTer">🏞 Terra / fazenda</button>';$('bSel').parentNode.after(r)}
+$('lR').insertAdjacentHTML('afterend','<h3>Terras (fazenda e outras)</h3><div id="lT"></div>');
+$('lClr').insertAdjacentHTML('afterend','<h3>Fotos de drone / imagens próprias</h3><div class="row"><button class="btn" id="bDrone">Adicionar imagem</button></div><input type="file" id="fDrone" accept="image/*" hidden><div id="lD"></div>');
+
+/* botão "usar minha posição" nos dialogos de coordenada */
+{const dlg=$('dlg'),sh=dlg.showModal.bind(dlg);dlg.showModal=()=>{sh();dlg.querySelectorAll('[name=c],[name=nw],[name=se]').forEach(el=>{if(!(el.nextElementSibling&&el.nextElementSibling.dataset.gps))el.insertAdjacentHTML('afterend','<button type="button" class="btn s" data-gps="'+el.name+'" style="margin-top:6px">📍 Usar minha posição</button>')})}}
+
+/* formas prontas */
+const invLL=(o,x,y)=>[o[0]+x/(111320*Math.cos(o[1]*Math.PI/180)),o[1]+y/110574];
+function mkCirc(c,e){const f=LOC(c[0],c[1]),q=f(e[0],e[1]),r=Math.hypot(q[0],q[1]);return Array.from({length:48},(_,i)=>invLL(c,r*Math.cos(i*Math.PI/24),r*Math.sin(i*Math.PI/24)))}
+function mkRect(a,b,c){const f=LOC(a[0],a[1]),B=f(b[0],b[1]),C=f(c[0],c[1]),L=Math.hypot(B[0],B[1])||1,u=[B[0]/L,B[1]/L],n=[-u[1],u[0]],w=C[0]*n[0]+C[1]*n[1];return[[0,0],B,[B[0]+n[0]*w,B[1]+n[1]*w],[n[0]*w,n[1]*w]].map(q=>invLL(a,q[0],q[1]))}
+function shpTap(g){draft.push(g);if(shp.t==='circ'&&draft.length===2){draft=mkCirc(draft[0],draft[1]);shp=null;toast('Forma pronta. Toque em Fechar para salvar.')}else if(shp.t==='rect'&&draft.length===3){draft=mkRect(draft[0],draft[1],draft[2]);shp=null;toast('Forma pronta. Toque em Fechar para salvar.')}drawBar()}
+$('bShp').onclick=async()=>{if(T)return toast('Finalize a gravação antes.');const r=await ask('Forma pronta',[{k:'f',l:'Forma',s:[['rect','Retângulo (3 toques: dois pontos de um lado e a largura)'],['circ','Círculo (2 toques: centro e borda)']],v:'rect'},{k:'k',l:'O que é?',s:[['p','Piquete'],['e','Estrutura'],['r','Área restrita'],['t','Terra']],v:'p'}]);if(!r)return;
+ $('bPoly').click();if(mode!=='poly')return;drawKind=r.k;shp={t:r.f};toast(r.f==='rect'?'Toque em 2 pontos de um lado e depois na largura.':'Toque no centro e depois na borda.')};
+$('bRl').onclick=()=>{$('bPoly').click();if(mode==='poly'){drawKind='rl';toast('Toque ao longo do trajeto proibido (ex.: cano raso).')}};
+$('bTer').onclick=()=>{$('bPoly').click();if(mode==='poly'){drawKind='t';toast('Marque os limites da terra (fazenda, arrendada, vizinhos).')}};
+
+/* terras */
+const terN={propria:'Fazenda',arrendada:'Arrendada',terceiros:'Terra de terceiros',outra:'Outra'},terC={propria:'#00e676',arrendada:'#ffd54f',terceiros:'#bdbdbd',outra:'#90caf9'};
+async function terDlg(r){const v=r||{};const o=await ask((r?'Editar':'Nova')+' terra',[{k:'name',l:'Nome (ex.: Fazenda Monte Sião, Sítio do vizinho)',v:v.name},{k:'tipo',l:'Tipo',s:[['propria','Fazenda (terra própria)'],['arrendada','Terra arrendada'],['terceiros','Terra de terceiros / vizinhos'],['outra','Outra']],v:v.tipo||'propria'},{k:'layer',l:'Camada',s:S.layers.map(x=>[x.id,x.name]),v:v.layer||S.al||'l0'},{k:'obs',l:'Observações',t:1,v:v.obs}]);return o&&o.name.trim()?{name:o.name.trim(),tipo:o.tipo,layer:o.layer,obs:o.obs}:null}
+
+/* restrição em área ou em linha (faixa) */
+async function resDlg(r,line){const v=r||{},ln=line||v.line,f=[{k:'name',l:'Nome (ex.: Pasto da frente, Cano da bomba)',v:v.name},{k:'layer',l:'Camada',s:S.layers.map(x=>[x.id,x.name]),v:v.layer||S.al||'l0'}];
+ Object.keys(NOME).forEach(t=>f.push({k:'s_'+t,b:1,l:'Proibido: '+NOME[t],v:(v.serv||[]).includes(t)}));if(ln)f.push({k:'larg',l:'Largura da faixa proibida (m)',v:String(v.larg||3)});f.push({k:'obs',l:'Motivo (ex.: glifosato mata o capim; cano raso a 30 cm)',t:1,v:v.obs});
+ const o=await ask((r?'Editar ':'Nova ')+(ln?'linha de restrição':'área restrita'),f);if(!o||!o.name.trim())return null;const serv=Object.keys(NOME).filter(t=>o['s_'+t]);if(!serv.length){toast('Marque ao menos um serviço proibido.');return null}
+ return Object.assign({name:o.name.trim(),layer:o.layer,serv,obs:o.obs},ln?{larg:Math.max(.5,parseFloat(String(o.larg).replace(',','.'))||3)}:{})}
+function dseg(pt,c,f){const p=f(pt[0],pt[1]);let b=1e9;for(let i=0;i<c.length-1;i++){const a=f(c[i][0],c[i][1]),q=f(c[i+1][0],c[i+1][1]),dx=q[0]-a[0],dy=q[1]-a[1],t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/(dx*dx+dy*dy||1)));b=Math.min(b,Math.hypot(a[0]+t*dx-p[0],a[1]+t*dy-p[1]))}return b}
+const rHit=(r,pt)=>r.line?dseg(pt,r.c,LOC(pt[0],pt[1]))<=(r.larg||3)/2:inP(pt,r.c);
+function checkR(pt){const t=T&&T.type,h=S.restr.find(r=>rOn(r)&&(r.serv||[]).includes(t)&&rHit(r,pt));$('hud').style.background=h?'#b71c1c':'';
+ if(h&&Date.now()-(checkR.t||0)>5000){checkR.t=Date.now();navigator.vibrate&&navigator.vibrate([300,150,300]);toast('⛔ RESTRIÇÃO: '+NOME[t]+' proibido em “'+h.name+'”')}}
+const pLen=c=>c.reduce((a,q,i)=>i?a+dist(c[i-1],q):0,0);
+
+/* desenho: terras, restrições, medidas */
+function lab(c,a,b){const m=c.reduce((s,q)=>[s[0]+q[0]/c.length,s[1]+q[1]/c.length],[0,0]),s=sp(m[0],m[1]);ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=5;ctx.fillText(a,s[0],s[1]);if(b)ctx.fillText(b,s[0],s[1]+16);ctx.shadowBlur=0}
+function drawRs(){ctx.save();ctx.textAlign='center';ctx.font='600 13px system-ui';const m=mpp();
+ S.terras.forEach(t=>{if(t.hide||!lOn(t))return;const c=terC[t.tipo]||terC.outra;path(t.c,true);ctx.globalAlpha=t.tipo==='terceiros'?.35:.07;ctx.fillStyle=t.tipo==='terceiros'?'#9e9e9e':c;ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle=c;ctx.lineWidth=t.tipo==='propria'?5:3;ctx.setLineDash(t.tipo==='propria'?[]:[12,6]);ctx.stroke();ctx.setLineDash([]);lab(t.c,(terN[t.tipo]||'Terra')+': '+t.name,ha(pArea(t.c)))});
+ S.restr.forEach(r=>{if(!rOn(r))return;const rel=(r.serv||[]).includes(cs());
+  if(r.line){path(r.c);ctx.globalAlpha=rel?.45:.22;ctx.strokeStyle='#ff3b30';ctx.lineWidth=Math.max(5,(r.larg||3)/m);ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();ctx.globalAlpha=1;ctx.lineWidth=rel?4:2.5;ctx.setLineDash([9,6]);ctx.stroke();ctx.setLineDash([]);ctx.lineCap='butt';lab([r.c[Math.floor(r.c.length/2)]],'🚫 '+r.name+' · '+fmt(pLen(r.c),0)+' m','Proibido: '+(r.serv||[]).map(t=>NOME[t]).join(', '))}
+  else{path(r.c,true);ctx.globalAlpha=rel?.5:.22;ctx.fillStyle=hatch();ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle='#ff3b30';ctx.lineWidth=rel?5:2.5;ctx.setLineDash([9,6]);ctx.stroke();ctx.setLineDash([]);lab(r.c,'⛔ '+r.name,'Proibido: '+(r.serv||[]).map(t=>NOME[t]).join(', '))}});
+ ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;const sd=(c,cl)=>{for(let i=0;i<(cl?c.length:c.length-1);i++){const q=c[i],r=c[(i+1)%c.length],mm=sp((q[0]+r[0])/2,(q[1]+r[1])/2);ctx.fillText(fmt(dist(q,r),0)+' m',mm[0],mm[1])}};
+ if(S.dimAll){S.paddocks.forEach(p=>{if(vis(p)&&lOn(p))sd(p.c,1)});S.lines.forEach(l=>{if(lOn(l)&&S.lay.l!==false)sd(l.c,0)});S.restr.forEach(r=>{if(rOn(r))sd(r.c,!r.line)});S.terras.forEach(t=>{if(!t.hide&&lOn(t))sd(t.c,1)})}
+ if(mode==='poly'&&draft.length>1)sd(draft,!['l','a','rl'].includes(drawKind)&&draft.length>2);
+ if(ZL&&V.z>ZL+.05&&!(S.drones&&S.drones.length)){const t='🔍 Ampliado: a foto real vai até o zoom '+ZL;ctx.shadowBlur=0;ctx.font='600 12px system-ui';const w=ctx.measureText(t).width+20;ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(W/2-w/2,12,w,26);ctx.fillStyle='#ffd54f';ctx.fillText(t,W/2,29)}
+ ctx.restore()}
+
+/* imagem de drone */
+const DRI={},DRq={};
+function drawDr(){S.drones.forEach(d=>{const im=DRI[d.id];if(!im||d.hide)return;const a=sp(d.nw[0],d.nw[1]),b=sp(d.se[0],d.se[1]);ctx.globalAlpha=d.op==null?1:d.op;ctx.drawImage(im,a[0],a[1],b[0]-a[0],b[1]-a[1]);ctx.globalAlpha=1})}
+async function loadDr(d){try{const b=await kv('readonly',s=>s.get('drone:'+d.id));if(!b)return;const im=new Image();im.onload=()=>{DRI[d.id]=im;draw()};im.src=URL.createObjectURL(b)}catch(e){}}
+const pq=t=>{const n=(String(t).match(/-?\d+(?:[.,]\d+)?/g)||[]).map(x=>parseFloat(x.replace(',','.')));return n.length>=2?[n[1],n[0]]:null};
+$('bDrone').onclick=()=>$('fDrone').click();
+$('fDrone').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+ const r=await ask('Posicionar imagem no mapa',[{k:'n',l:'Nome',v:f.name.replace(/\.[^.]+$/,'')},{k:'nw',l:'Canto superior esquerdo (noroeste): latitude, longitude. Vazio = ajustar à tela atual.'},{k:'se',l:'Canto inferior direito (sudeste): latitude, longitude'}]);if(!r)return;
+ try{const bm=await createImageBitmap(f);let blob=f;const k=Math.min(1,6000/Math.max(bm.width,bm.height));
+  if(k<1){const c=document.createElement('canvas');c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);c.getContext('2d').drawImage(bm,0,0,c.width,c.height);blob=await new Promise(ok=>c.toBlob(ok,'image/jpeg',.9))}
+  let nw=pq(r.nw),se=pq(r.se);if(!nw||!se){const sc=Math.min(W/bm.width,H/bm.height)*.9,w=bm.width*sc/2,h=bm.height*sc/2;nw=ll(W/2-w,H/2-h);se=ll(W/2+w,H/2+h)}
+  const id=uid();await kv('readwrite',s=>s.put(blob,'drone:'+id));S.drones.push({id,name:r.n.trim()||'Imagem',nw,se,op:1});save();DRq[id]=1;await loadDr({id});render();fitPts([nw,se])}catch(x){toast('Não consegui abrir essa imagem. Use JPG ou PNG.')}};
+async function drDlg(d){const o=await ask('Editar imagem',[{k:'n',l:'Nome',v:d.name},{k:'nw',l:'Canto superior esquerdo: latitude, longitude',v:d.nw[1].toFixed(6)+', '+d.nw[0].toFixed(6)},{k:'se',l:'Canto inferior direito: latitude, longitude',v:d.se[1].toFixed(6)+', '+d.se[0].toFixed(6)},{k:'op',l:'Opacidade (10 a 100%)',v:String(Math.round((d.op==null?1:d.op)*100))}]);if(!o)return;const a=pq(o.nw),b=pq(o.se);if(a&&b){d.nw=a;d.se=b}d.name=o.n.trim()||d.name;d.op=Math.max(.1,Math.min(1,(parseFloat(o.op)||100)/100))}
+
+/* listas */
+function rlists(){const emp=t=>`<div class="empty">${t}</div>`;
+ $('lR').innerHTML=S.restr.map(r=>`<div class="li"><span style="font-size:22px">${r.line?'🚫':'⛔'}</span><div class="t"><b>${esc(r.name)}</b><small>Proibido: ${(r.serv||[]).map(t=>NOME[t]).join(', ')} · ${r.line?fmt(pLen(r.c),0)+' m, faixa de '+fmt(r.larg||3,1)+' m':ha(pArea(r.c))}${r.obs?' · '+esc(r.obs):''}</small></div><div class="acts"><button class="btn s" data-rz="${r.id}">Ver</button><button class="btn s" data-re="${r.id}">Editar</button><button class="btn s" data-rh="${r.id}">${r.hide?'Mostrar':'Ocultar'}</button><button class="btn s dn" data-rd="${r.id}">Excluir</button></div></div>`).join('')||emp('Nenhuma restrição. Use “Área restrita” ou “Linha restrita” para marcar onde um serviço não pode ser feito.');
+ const pr=S.terras.filter(t=>t.tipo==='propria').reduce((a,t)=>a+pArea(t.c),0);
+ $('lT').innerHTML=(pr?`<div style="margin-bottom:6px;color:var(--mut)">Área da fazenda: <b>${ha(pr)}</b></div>`:'')+S.terras.map(t=>`<div class="li"><span class="dot" style="background:${terC[t.tipo]||'#fff'}"></span><div class="t"><b>${esc(t.name)}</b><small>${terN[t.tipo]||'Terra'} · ${ha(pArea(t.c))}${t.obs?' · '+esc(t.obs):''}</small></div><div class="acts"><button class="btn s" data-tz="${t.id}">Ver</button><button class="btn s" data-te="${t.id}">Editar</button><button class="btn s" data-th="${t.id}">${t.hide?'Mostrar':'Ocultar'}</button><button class="btn s dn" data-td="${t.id}">Excluir</button></div></div>`).join('')||emp('Nenhuma terra. Use “Terra / fazenda” para marcar o limite da fazenda e das terras vizinhas ou arrendadas.');
+ $('lD').innerHTML=S.drones.map(d=>`<div class="li"><div class="t"><b>${esc(d.name)}</b><small>opacidade ${Math.round((d.op==null?1:d.op)*100)}%</small></div><div class="acts"><button class="btn s" data-dv="${d.id}">Ver</button><button class="btn s" data-de="${d.id}">Editar</button><button class="btn s" data-dh="${d.id}">${d.hide?'Mostrar':'Ocultar'}</button><button class="btn s dn" data-dd="${d.id}">Excluir</button></div></div>`).join('')||emp('Nenhuma imagem. Adicione a foto do seu drone (JPG/PNG, norte para cima) e informe as coordenadas dos dois cantos.');
+ $('lClr').innerHTML=`<h3>Medidas e limpeza</h3><div class="row"><button class="btn ${S.dimAll?'on':''}" data-dim="1">Medidas dos lados: ${S.dimAll?'ligadas':'desligadas'}</button></div>
+<div class="row"><select id="clr">${[['p','Todos os piquetes'],['e','Todas as estruturas'],['l','Todas as linhas'],['r','Todas as restrições'],['t','Todas as terras'],['m','Todos os marcadores'],...Object.keys(PT).map(k=>['m:'+k,'Marcadores: '+PT[k][2]]),['o','Todos os serviços registrados']].map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('')}</select><button class="btn dn" data-clr="1">Limpar categoria</button></div>
+<div class="row"><select id="dl">${S.layers.filter(l=>l.id!=='l0').map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join('')||'<option value="">(sem camadas extras)</option>'}</select><button class="btn dn" data-dlx="1">Excluir camada e elementos</button></div>`}
+document.body.addEventListener('click',async e=>{const d=e.target.closest('[data-gps],[data-te],[data-th],[data-td],[data-tz],[data-dv],[data-de],[data-dh],[data-dd]');if(!d)return;const x=d.dataset;
+ if(x.gps){const el=$('dlg').querySelector('[name='+x.gps+']');if(!navigator.geolocation)return toast('GPS indisponível.');toast('Buscando sua posição...');navigator.geolocation.getCurrentPosition(p=>{const v=p.coords.latitude.toFixed(6)+', '+p.coords.longitude.toFixed(6);if(el.tagName==='TEXTAREA')el.value+=(el.value&&!el.value.endsWith('\n')?'\n':'')+v+'\n';else el.value=v;toast('Posição adicionada. Precisão ±'+Math.round(p.coords.accuracy)+' m'+(p.coords.accuracy>15?' (baixa: espere parado mais um pouco e repita)':''))},()=>toast('Não consegui o GPS. Permita a localização.'),{enableHighAccuracy:true,timeout:25000,maximumAge:0});return}
+ if(x.tz){fitPts(S.terras.find(t=>t.id===x.tz).c);return}
+ if(x.dv){const m=S.drones.find(t=>t.id===x.dv);fitPts([m.nw,m.se]);return}
+ if(x.te){const t=S.terras.find(t=>t.id===x.te),o=await terDlg(t);if(o)Object.assign(t,o)}
+ if(x.th){const t=S.terras.find(t=>t.id===x.th);t.hide=!t.hide}
+ if(x.td){if(!confirm('Excluir esta terra?'))return;S.terras=S.terras.filter(t=>t.id!==x.td)}
+ if(x.de){await drDlg(S.drones.find(t=>t.id===x.de))}
+ if(x.dh){const t=S.drones.find(t=>t.id===x.dh);t.hide=!t.hide}
+ if(x.dd){if(!confirm('Excluir esta imagem?'))return;S.drones=S.drones.filter(t=>t.id!==x.dd);kv('readwrite',s=>s.delete('drone:'+x.dd)).catch(()=>0)}
+ save();render()});
+const _r5=render;render=function(){_r5();S.drones.forEach(d=>{if(!DRI[d.id]&&!DRq[d.id]){DRq[d.id]=1;loadDr(d)}});V.z=Math.min(V.z,maxZ())};
+
+/* ===== v7: detecta o zoom máximo REAL do satélite e nunca mostra "Map data not yet available" ===== */
+var ZL=0,pT=null,pKey='';
+function tz(){return ZL?Math.min(NZ,ZL):NZ}
+function maxZ(){return S.drones&&S.drones.length?Math.max(NZ,21):tz()}
+function isPh(i){try{const c=document.createElement('canvas');c.width=c.height=8;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(i,0,0,8,8);const d=x.getImageData(0,0,8,8).data;let mn=255,mx=0,sm=0;for(let k=0;k<d.length;k+=4){const v=(d[k]+d[k+1]+d[k+2])/3;mn=Math.min(mn,v);mx=Math.max(mx,v);sm+=v}const av=sm/64;return mx-mn<30&&av>150&&av<245}catch(e){return undefined}}
+function drawT(t,zi,tx,ty,im,dx,dy,sz){if(im.ok&&!im.ph){ctx.drawImage(im,dx,dy,sz,sz);return}
+ const n=2**zi,wx=((tx%n)+n)%n;for(let a=1;a<=6&&zi-a>=0;a++){const g=tile(t.replace('{z}',zi-a).replace('{x}',wx>>a).replace('{y}',ty>>a));if(g.ok&&!g.ph){const w=256/2**a;ctx.drawImage(g,(wx-((wx>>a)<<a))*w,(ty-((ty>>a)<<a))*w,w,w,dx,dy,sz,sz);return}}}
+function tileP(u){return new Promise(res=>{const i=tile(u);if(i.ok||i.err)return res(i);const f=()=>res(i);i.addEventListener('load',f,{once:true});i.addEventListener('error',()=>setTimeout(f,80),{once:true});setTimeout(f,6000)})}
+async function probe(){const t=TL[bm][0];if(!t)return;const key=bm+'|'+Math.round(V.lng*150)+'|'+Math.round(V.lat*150)+'|'+t;if(key===pKey)return;pKey=key;
+ let lo=12,hi=Math.min(NZ,21),best=12;
+ while(lo<=hi){const z=(lo+hi)>>1,c=wp(V.lng,V.lat,z),i=await tileP(t.replace('{z}',z).replace('{x}',Math.floor(c[0]/256)).replace('{y}',Math.floor(c[1]/256)));if(i.ok&&i.ph!==true){best=z;lo=z+1}else hi=z-1}
+ if(ZL!==best){ZL=best;if(V.z>maxZ()+.01){V.z=maxZ();toast('Zoom máximo com imagem real nesta região: '+ZL)}draw()}}
+
+/* ===== v8: zoom ampliado, KML (Google Earth Pro) ===== */
+function maxZ(){return S.drones&&S.drones.length?Math.max(NZ,21):Math.min(tz()+3,23)}
+function toKml(){const e2=s=>String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])),co=c=>c.map(q=>q[0]+','+q[1]+',0').join(' ');
+ const pm=(n,d,g)=>`<Placemark><name>${e2(n)}</name><description>${e2(d)}</description>${g}</Placemark>`,poly=c=>`<Polygon><outerBoundaryIs><LinearRing><coordinates>${co([...c,c[0]])}</coordinates></LinearRing></outerBoundaryIs></Polygon>`,ls=c=>`<LineString><coordinates>${co(c)}</coordinates></LineString>`;let k='';
+ S.paddocks.forEach(p=>k+=pm((p.kind==='e'?'[Estrutura] ':'')+p.name,p.obs,poly(p.c)));S.terras.forEach(t=>k+=pm('[Terra] '+t.name,t.obs,poly(t.c)));
+ S.restr.forEach(r=>k+=pm('[Restrição] '+r.name,(r.serv||[]).join(', ')+' '+(r.obs||''),r.line?ls(r.c):poly(r.c)));S.lines.forEach(l=>k+=pm('[Linha] '+l.name,l.obs,ls(l.c)));
+ S.points.forEach(p=>k+=pm(p.name,(PT[p.type]||PT.outro)[2],`<Point><coordinates>${p.lng},${p.lat},0</coordinates></Point>`));
+ return '<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Gleba</name>'+k+'</Document></kml>'}
+async function kmlImport(txt){const d=new DOMParser().parseFromString(txt,'text/xml');if(d.getElementsByTagName('parsererror').length)return toast('Arquivo KML inválido.');
+ const cc=e=>{const t=e.getElementsByTagName('coordinates')[0];return t?t.textContent.trim().split(/\s+/).map(a=>a.split(',').map(Number)).filter(a=>a.length>=2&&!a.some(isNaN)).map(a=>[a[0],a[1]]):[]};
+ const polys=[],pts=[];[...d.getElementsByTagName('Placemark')].forEach(pm=>{const n=((pm.getElementsByTagName('name')[0]||{}).textContent||'Sem nome').trim(),ob=pm.getElementsByTagName('outerBoundaryIs')[0];
+  if(ob){const c=cc(ob);if(c.length>3&&c[0][0]===c[c.length-1][0]&&c[0][1]===c[c.length-1][1])c.pop();if(c.length>=3)polys.push({n,c})}else{const pt=pm.getElementsByTagName('Point')[0];if(pt){const c=cc(pt)[0];if(c)pts.push({n,c})}}});
+ if(!polys.length&&!pts.length)return toast('Não encontrei polígonos nem pontos nesse KML. Linhas ainda não são importadas.');
+ let t='p';if(polys.length){const r=await ask('Importar '+polys.length+' polígono(s) como',[{k:'t',l:'Tipo',s:[['p','Piquetes'],['e','Estruturas'],['f','Terra própria (fazenda)'],['x','Terra de terceiros']],v:'p'}]);if(!r)return;t=r.t}
+ const ly=S.al||'l0';polys.forEach(o=>{if(t==='p')S.paddocks.push({id:uid(),name:o.n,c:o.c,kind:'p',fn:'pasto',color:PAL[S.paddocks.length%PAL.length],layer:ly});else if(t==='e')S.paddocks.push({id:uid(),name:o.n,c:o.c,kind:'e',fn:'estr',color:'#e0e0e0',layer:ly});else S.terras.push({id:uid(),name:o.n,c:o.c,tipo:t==='f'?'propria':'terceiros',layer:ly})});
+ pts.forEach(o=>S.points.push({id:uid(),type:'outro',name:o.n,lng:o.c[0],lat:o.c[1],layer:ly}));save();render();fit();toast('Importado: '+polys.length+' polígono(s) e '+pts.length+' ponto(s).')}
+{const r=document.createElement('div');r.className='row';r.innerHTML='<button class="btn" id="bKml">Importar KML</button><button class="btn" id="bKmlX">Exportar KML</button><input type="file" id="fKml" accept=".kml,.kmz" hidden>';$('bExpG').parentNode.after(r)}
+$('bKml').onclick=()=>$('fKml').click();
+$('fKml').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;if(/\.kmz$/i.test(f.name))return toast('Esse é um KMZ. No Google Earth, use “Salvar lugar como” e escolha o tipo KML.');const r=new FileReader();r.onload=()=>kmlImport(String(r.result));r.readAsText(f)};
+$('bKmlX').onclick=()=>dl('gleba-'+day()+'.kml',toKml(),'application/vnd.google-earth.kml+xml');
 </script></body></html>
