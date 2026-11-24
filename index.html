@@ -65,7 +65,7 @@ body.printing #mapw{width:100%;height:auto;aspect-ratio:var(--ar);max-height:230
 <h3>Desenhar</h3>
 <div class="row"><button class="btn" id="bPoly">Novo piquete</button><button class="btn" id="bStr">Nova estrutura</button><button class="btn" id="bPt">Novo marcador</button></div>
 <div class="row"><select id="ptType"><option value="camera">Câmera</option><option value="interruptor">Interruptor</option><option value="bebedouro">Bebedouro</option><option value="porteira">Porteira</option><option value="outro">Outro</option></select></div>
-<div class="row"><button class="btn" id="bCoordP">Piquete por coordenadas</button><button class="btn" id="bCoordPt">Marcador por coordenadas</button></div>
+<div class="row" style="display:none"><button class="btn" id="bCoordP">Piquete por coordenadas</button><button class="btn" id="bCoordPt">Marcador por coordenadas</button></div>
 <div class="row"><button class="btn" id="bLine">Nova linha (tubulação/fiação)</button><button class="btn" id="bAsp">Linha de aspersores</button></div>
 <div class="row"><button class="btn" id="bPrint">Imprimir / salvar PDF</button></div>
 <div id="drawBar" class="row" style="display:none"><button class="btn pri" id="bDone">Salvar</button><button class="btn" id="bUndo">Desfazer</button><button class="btn dn" id="bCancel">Cancelar</button></div>
@@ -126,7 +126,7 @@ const cache=new Map();let NZ=S.nz||20;
 let _db;const db=()=>_db||(_db=new Promise((ok,no)=>{const r=indexedDB.open('fazenda_tiles',2);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('t'))d.createObjectStore('t');if(!d.objectStoreNames.contains('k'))d.createObjectStore('k')};r.onsuccess=()=>{r.result.onversionchange=()=>r.result.close();ok(r.result)};r.onerror=()=>no(r.error);r.onblocked=()=>no(new Error('blocked'))}));
 const idb=(m,fn)=>db().then(d=>new Promise((ok,no)=>{const t=d.transaction('t',m),r=fn(t.objectStore('t'));t.oncomplete=()=>ok(r.result);t.onerror=()=>no(t.error)}));
 const getTile=u=>Promise.race([idb('readonly',s=>s.get(u)),new Promise(r=>setTimeout(()=>r(null),1500))]).catch(()=>null);
-function tile(u){let i=cache.get(u);if(i&&i.err&&Date.now()-i.err>15000){cache.delete(u);i=null}if(!i){i=new Image();i.crossOrigin='anonymous';i.onload=()=>{i.ok=1;i.ph=isPh(i);draw()};
+function tile(u){let i=cache.get(u);if(i&&i.err&&Date.now()-i.err>15000){cache.delete(u);i=null}if(!i){i=new Image();i.crossOrigin='anonymous';i.onload=()=>{i.ok=1;i.ph=isPh(i);if(i.ph===undefined)phAsync(i,u);draw()};
  i.onerror=()=>{if(i.crossOrigin&&!i.rt){i.rt=1;i.crossOrigin=null;i.removeAttribute('crossorigin');i.src=i.u0;return}i.err=Date.now()};cache.set(u,i);
  getTile(u).then(b=>{i.u0=b?URL.createObjectURL(b):u;i.src=b?i.u0:cbu(u)});
  if(cache.size>1400){const k=cache.keys().next().value,o=cache.get(k);if(o.src.startsWith('blob:'))URL.revokeObjectURL(o.src);cache.delete(k)}}return i}
@@ -313,9 +313,9 @@ const FNK={p:['pasto','milho','corte','leite','ovelha','cavalo','horta','outro']
 const PAL=['#43c463','#e5c317','#3b9bff','#e8892b','#c06cff','#ff6b8a','#2ec4b6','#ffffff'];
 let drawKind='p';
 const vis=p=>!p.hide&&S.lay[p.kind==='e'?'e':'p']!==false&&(p.kind==='e'||((S.minHa==null||pArea(p.c)/1e4>=S.minHa)&&(S.maxHa==null||pArea(p.c)/1e4<=S.maxHa)));
-function ask(title,fields){return new Promise(res=>{
+function ask(title,fields,ok){return new Promise(res=>{
  const fld=f=>{const v=esc(f.v??'');return f.d?`<input type="date" name="${f.k}" value="${v}">`:f.s?`<select name="${f.k}">${f.s.map(o=>`<option value="${esc(o[0])}"${o[0]===f.v?' selected':''}>${esc(o[1])}</option>`).join('')}</select>`:f.t?`<textarea name="${f.k}">${v}</textarea>`:f.c?`<input type="color" name="${f.k}" value="${v}" style="height:44px;padding:2px">`:f.b?`<label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px"><input type="checkbox" name="${f.k}" ${f.v?'checked':''} style="width:auto"> ${esc(f.l)}</label>`:`<input name="${f.k}" value="${v}">`};
- $('dform').innerHTML='<h2>'+esc(title)+'</h2>'+fields.map(f=>`<div style="margin-bottom:10px">${f.b?'':`<label>${esc(f.l)}</label>`}${fld(f)}</div>`).join('')+'<div class="row"><button type="button" class="btn" onclick="document.getElementById(\'dlg\').close(\'x\')">Cancelar</button><button class="btn pri" value="ok">Salvar</button></div>';
+ $('dform').innerHTML='<h2>'+esc(title)+'</h2>'+fields.map(f=>`<div style="margin-bottom:10px">${f.b?'':`<label>${esc(f.l)}</label>`}${fld(f)}</div>`).join('')+'<div class="row"><button type="button" class="btn" onclick="document.getElementById(\'dlg\').close(\'x\')">Cancelar</button><button class="btn pri" value="ok">'+(ok||'Salvar')+'</button></div>';
  const d=$('dlg');d.onclose=()=>{if(d.returnValue==='ok'){const o={};fields.forEach(f=>{if(f.b)o[f.k]=false});new FormData($('dform')).forEach((v,k)=>o[k]=(o[k]===false?true:v));res(o)}else res(null)};d.returnValue='';d.showModal()})}
 async function metaDlg(p,kind){const v=p||{};const r=await ask((p?'Editar ':'Novo ')+(kind==='e'?'estrutura':'piquete'),[
  {k:'name',l:'Nome',v:v.name},{k:'layer',l:'Camada',s:S.layers.map(x=>[x.id,x.name]),v:v.layer||S.al||'l0'},{k:'fn',l:kind==='e'?'Tipo de estrutura':'Função do piquete',s:FNK[kind].map(k=>[k,FN[k][1]+' '+FN[k][0]]),v:v.fn},
@@ -476,7 +476,7 @@ try{const rc=JSON.parse(localStorage.getItem(K+'_rec')||'null');if(rc&&rc.pts&&r
 addEventListener('resize',resize);resize();render();fit();
 
 /* ===== v5: IndexedDB, areas restritas, selecao, busca, GPS a pe, medidas, provedor ===== */
-function ns(){S.paddocks=S.paddocks||[];S.points=S.points||[];S.ops=S.ops||[];S.plan=S.plan||[];S.lines=S.lines||[];S.gastos=S.gastos||[];S.filt=S.filt||{};S.lay=S.lay||{};S.fm=S.fm||{};S.offline=S.offline||[];S.restr=S.restr||[];S.terras=S.terras||[];S.drones=S.drones||[];S.prov=S.prov||{t:'esri'};if(!S.layers||!S.layers.length)S.layers=[{id:'l0',name:'Fazenda',vis:1}]}
+function ns(){S.paddocks=S.paddocks||[];S.points=S.points||[];S.ops=S.ops||[];S.plan=S.plan||[];S.lines=S.lines||[];S.gastos=S.gastos||[];S.filt=S.filt||{};S.lay=S.lay||{};S.fm=S.fm||{};S.offline=S.offline||[];S.restr=S.restr||[];S.terras=S.terras||[];S.coords=S.coords||[];S.drones=S.drones||[];S.prov=S.prov||{t:'esri'};if(!S.layers||!S.layers.length)S.layers=[{id:'l0',name:'Fazenda',vis:1}]}
 const kv=(m,fn)=>db().then(d=>new Promise((ok,no)=>{const t=d.transaction('k',m),r=fn(t.objectStore('k'));t.oncomplete=()=>ok(r.result);t.onerror=()=>no(t.error)}));
 document.head.insertAdjacentHTML('beforeend','<style>#sbar{position:absolute;left:10px;right:64px;bottom:10px;z-index:6;display:none;gap:8px;flex-wrap:wrap}#sbar.on{display:flex}#sbar .btn{flex:1;min-width:84px;padding:13px 8px;box-shadow:0 2px 8px #0007}#sCount{width:100%;color:#fff;font-weight:700;text-shadow:0 1px 3px #000}</style>');
 $('mapw').insertAdjacentHTML('beforeend','<div id="sbar"><div id="sCount"></div><button class="btn pri" id="sMov">Mover p/ camada</button><button class="btn dn" id="sDel">Excluir</button><button class="btn" id="sClr">Limpar seleção</button></div>');
@@ -532,7 +532,7 @@ $('sMov').onclick=async()=>{if(!SEL.size)return;const r=await ask('Mover '+SEL.s
 
 /* GPS a pé, a cavalo ou de veículo */
 $('bWalk').onclick=async()=>{if(T)return toast('Finalize a gravação antes.');if(!navigator.geolocation)return toast('GPS indisponível.');
- const r=await ask('Demarcar andando',[{k:'k',l:'O que você vai demarcar?',s:[['p','Piquete'],['e','Estrutura'],['l','Linha (tubulação, fiação...)'],['r','Área restrita']],v:'p'},{k:'i',l:'Um canto a cada quantos metros? (a pé: 3 a 5 · cavalo ou veículo: 8 a 15)',v:'5'}]);if(!r)return;
+ const r=await ask('Demarcar andando',[{k:'k',l:'O que você vai demarcar?',s:[['p','Piquete'],['e','Estrutura'],['l','Linha (tubulação, fiação...)'],['r','Área restrita']],v:window._wk||'p'},{k:'i',l:'Um canto a cada quantos metros? (a pé: 3 a 5 · cavalo ou veículo: 8 a 15)',v:'5'}]);if(!r)return;
  $('bPoly').click();drawKind=r.k;const iv=Math.max(1,parseFloat(String(r.i).replace(',','.'))||5);
  window._w=navigator.geolocation.watchPosition(p=>{const c=p.coords;if(mode!=='poly'||c.accuracy>20)return;const g=[c.longitude,c.latitude],l=draft[draft.length-1];me={lng:g[0],lat:g[1],acc:c.accuracy};V.lng=g[0];V.lat=g[1];if(!l||dist(l,g)>=iv){draft.push(g);drawBar()}else draw()},()=>toast('Erro de GPS. Permita a localização.'),{enableHighAccuracy:true,maximumAge:0});
  toast('Ande pelo contorno. Toque em Fechar quando terminar.')};
@@ -574,12 +574,12 @@ try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}ca
 var shp=null;
 function maxZ(){return S.drones&&S.drones.length?Math.max(NZ,21):NZ}
 $('nz').addEventListener('change',()=>{V.z=Math.min(V.z,maxZ());draw()});
-{const r=document.createElement('div');r.className='row';r.innerHTML='<button class="btn" id="bShp">◇ Retângulo / círculo</button><button class="btn" id="bRl">🚫 Linha restrita</button><button class="btn" id="bTer">🏞 Terra / fazenda</button>';$('bSel').parentNode.after(r)}
+{const r=document.createElement('div');r.className='row';r.innerHTML='<button class="btn" id="bShp" style="display:none">◇ Retângulo / círculo</button><button class="btn" id="bRl">🚫 Linha restrita</button><button class="btn" id="bTer">🏞 Terra / fazenda</button>';$('bSel').parentNode.after(r)}
 $('lR').insertAdjacentHTML('afterend','<h3>Terras (fazenda e outras)</h3><div id="lT"></div>');
 $('lClr').insertAdjacentHTML('afterend','<h3>Fotos de drone / imagens próprias</h3><div class="row"><button class="btn" id="bDrone">Adicionar imagem</button></div><input type="file" id="fDrone" accept="image/*" hidden><div id="lD"></div>');
 
 /* botão "usar minha posição" nos dialogos de coordenada */
-{const dlg=$('dlg'),sh=dlg.showModal.bind(dlg);dlg.showModal=()=>{sh();dlg.querySelectorAll('[name=c],[name=nw],[name=se]').forEach(el=>{if(!(el.nextElementSibling&&el.nextElementSibling.dataset.gps))el.insertAdjacentHTML('afterend','<button type="button" class="btn s" data-gps="'+el.name+'" style="margin-top:6px">📍 Usar minha posição</button>')})}}
+{const dlg=$('dlg'),sh=dlg.showModal.bind(dlg);dlg.showModal=()=>{sh();dlg.querySelectorAll('[name=c],[name=nw],[name=se]').forEach(el=>{if(!(el.nextElementSibling&&el.nextElementSibling.dataset.gps))el.insertAdjacentHTML('afterend','<button type="button" class="btn s" data-gps="'+el.name+'" style="margin-top:6px">📍 Usar minha posição</button>'+svSel(el.name))})}}
 
 /* formas prontas */
 const invLL=(o,x,y)=>[o[0]+x/(111320*Math.cos(o[1]*Math.PI/180)),o[1]+y/110574];
@@ -660,13 +660,18 @@ const _r5=render;render=function(){_r5();S.drones.forEach(d=>{if(!DRI[d.id]&&!DR
 var ZL=0,pT=null,pKey='';
 function tz(){return ZL?Math.min(NZ,ZL):NZ}
 function maxZ(){return S.drones&&S.drones.length?Math.max(NZ,21):tz()}
-function isPh(i){try{const c=document.createElement('canvas');c.width=c.height=8;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(i,0,0,8,8);const d=x.getImageData(0,0,8,8).data;let mn=255,mx=0,sm=0;for(let k=0;k<d.length;k+=4){const v=(d[k]+d[k+1]+d[k+2])/3;mn=Math.min(mn,v);mx=Math.max(mx,v);sm+=v}const av=sm/64;return mx-mn<30&&av>150&&av<245}catch(e){return undefined}}
+function isPh0(i){try{const c=document.createElement('canvas');c.width=c.height=8;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(i,0,0,8,8);const d=x.getImageData(0,0,8,8).data;let mn=255,mx=0,sm=0;for(let k=0;k<d.length;k+=4){const v=(d[k]+d[k+1]+d[k+2])/3;mn=Math.min(mn,v);mx=Math.max(mx,v);sm+=v}const av=sm/64;return mx-mn<30&&av>150&&av<245}catch(e){return undefined}}
+function isPh1(i){try{const N=32,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d',{willReadFrequently:true});x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(i,0,0,N,N);const d=x.getImageData(0,0,N,N).data,L=[];let R=0,G=0,B=0;for(let k=0;k<d.length;k+=4){L.push((d[k]+d[k+1]+d[k+2])/3);R+=d[k];G+=d[k+1];B+=d[k+2]}const n=L.length,s=L.slice().sort((a,b)=>a-b),med=s[n>>1];let near=0;L.forEach(v=>{if(Math.abs(v-med)<=14)near++});return near/n>=.8&&med>150&&med<245&&Math.abs(R-G)/n<10&&Math.abs(G-B)/n<10}catch(e){return false}}
+function isPh(i){const a=isPh0(i);if(a===undefined)return undefined;return a||isPh1(i)}
+/* celular: quando o canvas fica "contaminado" (CORS), lê o bloco via fetch + createImageBitmap, que nunca contamina */
+function phAsync(i,u){if(i.ph!==undefined)return Promise.resolve(i.ph);if(i.pp)return i.pp;
+ i.pp=(async()=>{try{const r=await fetch(cbu(u),{mode:'cors',cache:'no-store'});if(!r.ok)throw 0;const b=await createImageBitmap(await r.blob());const v=isPh(b);if(b.close)b.close();return v}catch(e){return undefined}})().then(v=>{if(v!==undefined){i.ph=v;draw()}return v});return i.pp}
 function drawT(t,zi,tx,ty,im,dx,dy,sz){if(im.ok&&!im.ph){ctx.drawImage(im,dx,dy,sz,sz);return}
  const n=2**zi,wx=((tx%n)+n)%n;for(let a=1;a<=6&&zi-a>=0;a++){const g=tile(t.replace('{z}',zi-a).replace('{x}',wx>>a).replace('{y}',ty>>a));if(g.ok&&!g.ph){const w=256/2**a;ctx.drawImage(g,(wx-((wx>>a)<<a))*w,(ty-((ty>>a)<<a))*w,w,w,dx,dy,sz,sz);return}}}
 function tileP(u){return new Promise(res=>{const i=tile(u);if(i.ok||i.err)return res(i);const f=()=>res(i);i.addEventListener('load',f,{once:true});i.addEventListener('error',()=>setTimeout(f,80),{once:true});setTimeout(f,6000)})}
 async function probe(){const t=TL[bm][0];if(!t)return;const key=bm+'|'+Math.round(V.lng*150)+'|'+Math.round(V.lat*150)+'|'+t;if(key===pKey)return;pKey=key;
  let lo=12,hi=Math.min(NZ,21),best=12;
- while(lo<=hi){const z=(lo+hi)>>1,c=wp(V.lng,V.lat,z),i=await tileP(t.replace('{z}',z).replace('{x}',Math.floor(c[0]/256)).replace('{y}',Math.floor(c[1]/256)));if(i.ok&&i.ph===undefined)NOD=true;else if(i.ok)NOD=false;if(i.ok&&i.ph!==true){best=z;lo=z+1}else hi=z-1}
+ while(lo<=hi){const z=(lo+hi)>>1,c=wp(V.lng,V.lat,z),tu=t.replace('{z}',z).replace('{x}',Math.floor(c[0]/256)).replace('{y}',Math.floor(c[1]/256)),i=await tileP(tu);let ph=i.ph;if(i.ok&&ph===undefined)ph=await phAsync(i,tu);if(i.ok&&ph===undefined)NOD=true;else if(i.ok)NOD=false;if(i.ok&&ph!==true){best=z;lo=z+1}else hi=z-1}
  if(ZL!==best){ZL=best;if(V.z>maxZ()+.01){V.z=maxZ();toast('Zoom máximo com imagem real nesta região: '+ZL)}draw()}}
 
 /* ===== v8: zoom ampliado, KML (Google Earth Pro) ===== */
@@ -773,8 +778,8 @@ function curTool(){if(T)return'trk';if(mode==='poly')return({p:'p',e:'e',l:'l',a
 function tbUpd(){const t=curTool();document.querySelectorAll('#tbar button').forEach(b=>b.classList.toggle('on',b.dataset.tool===t))}
 function guard(){if((mode==='poly'&&draft.length>1)||(mode==='edit'&&edit.u.length))return confirm('Descartar o desenho atual para trocar de ferramenta?');return true}
 function useTool(t){if(T)return toast('Finalize a gravação antes de trocar de ferramenta.');if(!guard())return;
- if(t==='nav'){cancelDraw()}else if(t==='p')$('bPoly').click();else if(t==='e')$('bStr').click();else if(t==='l')$('bLine').click();else if(t==='a')$('bAsp').click();else if(t==='r')$('bRes').click();else if(t==='rl')$('bRl').click();else if(t==='t')$('bTer').click();
- else if(t==='m')$('bPt').click();else if(t==='s')$('bSel').click();else if(t==='d')measStart();else if(t==='w')$('bWalk').click();else if(t==='f')$('bShp').click();tbUpd()}
+ if(t==='nav'){cancelDraw()}else if(t==='p')areaStart('bPoly');else if(t==='e')areaStart('bStr');else if(t==='l')$('bLine').click();else if(t==='a')$('bAsp').click();else if(t==='r')areaStart('bRes');else if(t==='rl')$('bRl').click();else if(t==='t')areaStart('bTer');
+ else if(t==='m')ptStart();else if(t==='s')$('bSel').click();else if(t==='d')measStart();else if(t==='w')$('bWalk').click();else if(t==='f')areaStart('bPoly');tbUpd()}
 $('tbar').onclick=e=>{const b=e.target.closest('[data-tool]');if(b)useTool(b.dataset.tool)};
 setInterval(()=>{tbUpd();const st=Math.max(0,...['dbar','sbar','hud'].map(id=>{const el=$(id);return el&&el.offsetParent?el.offsetHeight+10:0}));$('coord').style.bottom=Math.max(48,st+(T?30:8))+'px'},300);
 const _curs=curs;curs=function(h){_curs(h);if(!h&&(mode==='meas'||mode==='sel'))cv.style.cursor='crosshair'};
@@ -839,11 +844,11 @@ function drawMeas(){ctx.save();ctx.textAlign='center';
   if(mode==='poly'&&HV){const a=dr[dr.length-1];lbl('+'+fmtD(dist(a,HV)),[(a[0]+HV[0])/2,(a[1]+HV[1])/2],'#9be7ff',-4)}
   if(!ed&&dr.length>=2){const a=dr[0],b=dr[dr.length-1];ctx.setLineDash([2,6]);ctx.strokeStyle='#ffd54f';ctx.lineWidth=2.5;path([a,b]);ctx.stroke();ctx.setLineDash([]);lbl((cl?'fecha ':'reta ')+fmtD(dist(a,b)),[(a[0]+b[0])/2,(a[1]+b[1])/2],'#ffd54f',-22)}}}
  ctx.restore();hudUpd();if(!LXY&&!LG)cdShow([V.lng,V.lat],0,1)}
-function hudMeas(){const r=(a,b,c)=>'<div class="r"><span>'+a+'</span><b'+(c?' style="color:'+c+'"':'')+'>'+b+'</b></div>',bt='<div class="bt"><button data-ma="undo">↶ Ponto</button><button data-ma="new">Nova medida</button><button data-ma="exit">Sair</button></div>',m=MS.m;let h='<b>📏 Régua</b>';
+function hudMeas(){const r=(a,b,c)=>'<div class="r"><span>'+a+'</span><b'+(c?' style="color:'+c+'"':'')+'>'+b+'</b></div>',bt='<div class="bt"><button data-ma="undo">↶ Ponto</button><button data-ma="new">Nova medida</button><button data-ma="exit">Sair</button></div><div class="bt"><button data-ma="gps">📍 Minha posição</button><button data-ma="coord">⌨ Coordenadas</button><button data-ma="sv">★ Salvas</button></div>',m=MS.m;let h='<b>📏 Régua</b>';
  if(!m.length)return h+'<div style="margin-top:4px;opacity:.9">Toque em um ponto de uma <b>linha ou contorno</b> (ele gruda) e depois em outro: a distância <b>segue o traçado</b>. No mapa livre, mede em reta.</div>'+bt;
  if(m.length===1)return h+'<div style="margin:4px 0;opacity:.9">Marque o segundo ponto.</div>'+(MS.cand?r('Até o cursor',fmtD(legOf(m[0],MS.cand).len),'#9be7ff'):'')+bt;
  const L=legs(),tot=L.reduce((a,l)=>a+l.len,0),sg=L.flatMap(l=>{const o=[];for(let i=1;i<l.p.length;i++)o.push(dist(l.p[i-1],l.p[i]));return o}),last=L[L.length-1];
- h+=r('Ao longo do traçado',fmtD(tot),'#00e5ff');if(last.alt)h+=r('Outro sentido',fmtD(last.alt.len),'#ffb74d');h+=r('Reta 1º → último',fmtD(dist(m[0].g,m[m.length-1].g)),'#ffd54f');
+ h+=r('Ao longo do traçado',fmtD(tot),'#00e5ff');if(last.alt)h+=r('Outro sentido',fmtD(last.alt.len),'#ffb74d');h+=r('Reta 1º → último',fmtD(dist(m[0].g,m[m.length-1].g)),'#ffd54f');if(m.length>=3)h+=r('Perímetro (fechando)',fmtD(tot+dist(m[m.length-1].g,m[0].g)),'#ffd54f')+r('Área (fechando)',ha(pArea(m.map(q=>q.g))));
  h+=r('Lados ('+sg.length+')',sg.length<=8?sg.map(x=>fmt(x,1)).join(' · ')+' m':'veja no mapa');return h+bt}
 function hudDraw(){const ed=mode==='edit',dr=ed?edit.c:mode==='poly'?draft:null;if(!dr||dr.length<2)return'';const cl=ed?!edit.open:(!['l','a','rl'].includes(drawKind)&&dr.length>2),r=(a,b,c)=>'<div class="r"><span>'+a+'</span><b'+(c?' style="color:'+c+'"':'')+'>'+b+'</b></div>',sg=[];
  for(let i=1;i<dr.length;i++)sg.push(dist(dr[i-1],dr[i]));if(ed&&cl)sg.push(dist(dr[dr.length-1],dr[0]));const tot=sg.reduce((a,b)=>a+b,0);let h='<b>📏 Medidas</b>';
@@ -851,7 +856,7 @@ function hudDraw(){const ed=mode==='edit',dr=ed?edit.c:mode==='poly'?draft:null;
  if(ed){h+=r(cl?'Perímetro':'Comprimento',fmtD(tot),'#00e5ff');if(cl&&dr.length>=3)h+=r('Área',ha(pArea(dr)))}
  else{h+=r('Total do traçado',fmtD(tot),'#00e5ff');h+=r('Reta 1º → último',fmtD(dist(dr[0],dr[dr.length-1])),'#ffd54f');if(cl)h+=r('Perímetro fechando',fmtD(tot+dist(dr[0],dr[dr.length-1])))+r('Área',ha(pArea(dr)))}return h}
 function hudUpd(f){const el=$('mhud');let h='';try{h=(mode==='meas'&&MS)?hudMeas():hudDraw()}catch(e){h=''}if(f||h!==LH){LH=h;el.innerHTML=h;el.style.display=h?'block':'none'}}
-$('mhud').onclick=e=>{const b=e.target.closest('[data-ma]');if(!b||!MS)return;const a=b.dataset.ma;if(a==='undo')MS.m.pop();else if(a==='new')MS.m=[];else return useTool('nav');hudUpd(1);draw()};
+$('mhud').onclick=e=>{const b=e.target.closest('[data-ma]');if(!b||!MS)return;const a=b.dataset.ma;if(a==='undo')MS.m.pop();else if(a==='new')MS.m=[];else if(a==='gps'){measGps();return}else if(a==='coord'){measCoords();return}else if(a==='sv'){measSaved();return}else return useTool('nav');hudUpd(1);draw()};
 
 /* ---------- editar a forma de linhas, restricoes e terras ---------- */
 function editShape(k,id){if(T)return toast('Finalize a gravação antes.');const o=SK[k]().find(q=>q.id===id);if(!o)return;cancelDraw();mode='edit';edit={p:o,c:o.c.map(q=>q.slice()),u:[],mv:0,sel:null,open:!!(k==='l'||o.line)};fitPts(o.c);drawBar();toast('Arraste os pontos; toque na linha para criar um novo; depois toque em Salvar.')}
@@ -882,4 +887,58 @@ addEventListener('keydown',e=>{const t=document.activeElement&&document.activeEl
  if(k.startsWith('arrow')&&!((mode==='edit'&&edit.sel!=null)||mode==='mvpt')){e.preventDefault();const st=e.shiftKey?240:80,w=wp(V.lng,V.lat),r=unp(w[0]+(k==='arrowright'?st:k==='arrowleft'?-st:0),w[1]+(k==='arrowdown'?st:k==='arrowup'?-st:0));V.lng=r[0];V.lat=r[1];draw()}});
 addEventListener('keyup',e=>{if(e.key===' ')KS.sp=0});addEventListener('blur',()=>{KS.sp=0});
 
+
+/* ===== v11: coordenadas salvas, medir por coordenadas, escolha do jeito de marcar ===== */
+document.head.insertAdjacentHTML('beforeend','<style>#adlg .btn.big{text-align:left;width:100%}#coord #cSv{margin-left:2px}</style>');
+document.body.insertAdjacentHTML('beforeend','<dialog id="adlg"><h2 id="adT"></h2><div id="adB" style="display:grid;gap:8px"></div><div class="row" style="margin-top:10px"><button type="button" class="btn" id="adX">Cancelar</button></div></dialog>');
+function pickArea(title,opts){return new Promise(res=>{const d=$('adlg');let v=null;$('adT').textContent=title;$('adB').innerHTML=opts.map(o=>'<button type="button" class="btn big" data-am="'+o[0]+'">'+o[1]+'</button>').join('');d.onclose=()=>res(v);$('adB').onclick=e=>{const b=e.target.closest('[data-am]');if(b){v=b.dataset.am;d.close()}};$('adX').onclick=()=>d.close();d.showModal()})}
+function svSel(n){return(S.coords&&S.coords.length)?'<select data-sv="'+n+'" style="margin-top:6px"><option value="">★ Inserir coordenada salva…</option>'+S.coords.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('')+'</select>':''}
+document.body.addEventListener('change',e=>{const x=e.target.closest('[data-sv]');if(!x||!x.value)return;const el=$('dlg').querySelector('[name='+x.dataset.sv+']'),c=S.coords.find(q=>q.id===x.value);if(!el||!c)return;const v=c.lat.toFixed(6)+', '+c.lng.toFixed(6);if(el.tagName==='TEXTAREA')el.value+=(el.value&&!el.value.endsWith('\n')?'\n':'')+v+'\n';else el.value=v;x.value=''});
+function getGps(){return new Promise(res=>{if(!navigator.geolocation){toast('GPS indisponível.');return res(null)}toast('Buscando sua posição...');navigator.geolocation.getCurrentPosition(p=>{me={lng:p.coords.longitude,lat:p.coords.latitude,acc:p.coords.accuracy};toast('Posição obtida. Precisão ±'+Math.round(p.coords.accuracy)+' m'+(p.coords.accuracy>15?' (baixa: espere parado mais um pouco)':''));res([me.lng,me.lat,p.coords.accuracy])},()=>{toast('Não consegui o GPS. Permita a localização.');res(null)},{enableHighAccuracy:true,timeout:25000,maximumAge:0})})}
+
+/* --- coordenadas salvas --- */
+$('bPrint').parentNode.insertAdjacentHTML('afterend','<h3>Coordenadas salvas</h3><div class="row"><button class="btn" id="bCoGps">📍 Salvar minha posição</button><button class="btn" id="bCoMap">⊕ Salvar ponto do mapa</button></div><div class="row"><button class="btn" id="bCoTxt">⌨ Digitar coordenada</button><button class="btn" id="bMedC">📏 Medir por coordenadas</button></div><div id="lCo"></div>');
+$('cCp').insertAdjacentHTML('afterend','<button id="cSv" title="Salvar esta coordenada">★</button>');
+function renderCo(){$('lCo').innerHTML=(S.coords||[]).map(c=>'<div class="li"><div class="t"><b>'+esc(c.name)+'</b><small>'+esc(fmtCoord([c.lng,c.lat]))+(c.acc?' · ±'+c.acc+' m':'')+'</small></div><div class="acts"><button class="btn s" data-cv="'+c.id+'">Ver</button><button class="btn s" data-cm="'+c.id+'">Medir</button><button class="btn s" data-cp="'+c.id+'">Copiar</button><button class="btn s" data-ck="'+c.id+'">→ Marcador</button><button class="btn s" data-cr="'+c.id+'">Nome</button><button class="btn s dn" data-cx="'+c.id+'">Excluir</button></div></div>').join('')||'<div class="empty">Nenhuma coordenada salva. Salve sua posição, um ponto do mapa (★ no canto) ou digite uma.</div>'}
+async function coAdd(g,acc,nm){const r=await ask('Salvar coordenada',[{k:'n',l:'Nome',v:nm||''}],'Salvar');if(!r||!r.n.trim())return;S.coords.push({id:uid(),name:r.n.trim(),lng:g[0],lat:g[1],acc:acc?Math.round(acc):undefined,date:Date.now()});save();renderCo();toast('Coordenada salva.')}
+$('bCoGps').onclick=async()=>{const g=await getGps();if(g)coAdd(g,g[2],'Minha posição '+new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))};
+$('bCoMap').onclick=()=>coAdd(LG||[V.lng,V.lat],0,'Ponto do mapa');
+$('cSv').onclick=()=>coAdd(LG||[V.lng,V.lat],0,'Ponto do mapa');
+$('bCoTxt').onclick=async()=>{const r=await ask('Digitar coordenada',[{k:'n',l:'Nome'},{k:'c',l:'Latitude, longitude (ex.: -14.8612, -40.8441)'}],'Salvar');if(!r)return;const c=parseCoords(r.c)[0];if(!r.n.trim()||!c||!okLL(c))return toast('Confira o nome e a coordenada.');S.coords.push({id:uid(),name:r.n.trim(),lng:c[0],lat:c[1],date:Date.now()});save();renderCo()};
+$('lCo').onclick=async e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset,id=d.cv||d.cm||d.cp||d.ck||d.cr||d.cx,c=S.coords.find(x=>x.id===id);if(!c)return;const g=[c.lng,c.lat];
+ if(d.cv){V.lng=c.lng;V.lat=c.lat;V.z=Math.min(maxZ(),Math.max(V.z,18));cdShow(g,0,1);draw()}
+ else if(d.cm){if(!MS)measStart();if(MS){measAdd(g);if(MS.m.length>1)fitPts(MS.m.map(q=>q.g));else{V.lng=c.lng;V.lat=c.lat;draw()}}}
+ else if(d.cp){LG=g;copyCoord()}
+ else if(d.ck){S.points.push({id:uid(),type:$('ptType').value,name:c.name,lng:c.lng,lat:c.lat,layer:S.al||'l0'});save();render();toast('Marcador criado.')}
+ else if(d.cr){const r=await ask('Renomear coordenada',[{k:'n',l:'Nome',v:c.name}]);if(r&&r.n.trim()){c.name=r.n.trim();save();renderCo()}}
+ else if(d.cx&&confirm('Excluir “'+c.name+'”?')){S.coords=S.coords.filter(x=>x!==c);save();renderCo()}};
+const _rd=render;render=function(){_rd();renderCo()};renderCo();
+
+/* --- medir por coordenadas (usa a régua) --- */
+function measAdd(g){if(!MS)return;MS.m.push({g});cdShow(g,0,1);hudUpd(1);draw()}
+async function measGps(){const g=await getGps();if(g)measAdd([g[0],g[1]])}
+async function measSaved(){if(!S.coords.length)return toast('Nenhuma coordenada salva ainda.');const r=await ask('Adicionar à régua',[{k:'s',l:'Coordenada salva',s:S.coords.map(c=>[c.id,c.name])}],'Adicionar');if(!r)return;const c=S.coords.find(x=>x.id===r.s);if(c)measAdd([c.lng,c.lat])}
+async function measCoords(){const r=await ask('Medir por coordenadas',[{k:'c',l:'Uma coordenada por linha: latitude, longitude. Use “Minha posição” ou uma salva. Com 3 ou mais pontos mostra também perímetro e área.',t:1}],'Medir');if(!r)return;const c=parseCoords(r.c).filter(okLL);if(c.length<(MS&&MS.m.length?1:2))return toast('Informe ao menos 2 coordenadas.');if(!MS){measStart();if(!MS)return}c.forEach(g=>MS.m.push({g}));fitPts(MS.m.map(q=>q.g));cdShow(c[c.length-1],0,1);hudUpd(1);draw()}
+$('bMedC').onclick=measCoords;
+
+/* --- ao clicar no que vai ser criado, pergunta como marcar --- */
+async function areaStart(id){if(T)return toast('Finalize a gravação antes de desenhar.');
+ const K={bPoly:['p','Novo piquete'],bStr:['e','Nova estrutura'],bRes:['r','Nova área restrita'],bTer:['t','Nova terra / fazenda']}[id],kind=K[0];
+ const o=[['pts','👆 Tocar nos cantos no mapa'],['rect','▭ Retângulo (3 toques)'],['circ','◯ Círculo (centro e borda)'],['coord','⌖ Digitar coordenadas / minha posição / salvas']];if(kind!=='t')o.push(['walk','🚶 Andar com GPS']);
+ const m=await pickArea(K[1]+': como marcar a área?',o);if(!m)return;
+ if(m==='walk'){window._wk=kind;$('bWalk').click();return}
+ $(id).click();if(mode!=='poly')return;
+ if(m==='rect'){shp={t:'rect'};toast('Toque em 2 pontos de um lado e depois na largura.')}
+ else if(m==='circ'){shp={t:'circ'};toast('Toque no centro e depois na borda.')}
+ else if(m==='coord'){const r=await ask(K[1]+' por coordenadas',[{k:'c',l:'Um canto por linha: latitude, longitude (ex.: -14.8612, -40.8441). Mínimo 3, na ordem em que você contorna a área.',t:1}],'Criar');if(!r){cancelDraw();return}
+  const c=parseCoords(r.c).filter(okLL);if(c.length>3&&dist(c[0],c[c.length-1])<.5)c.pop();if(c.length<3){cancelDraw();return toast('Informe ao menos 3 coordenadas, uma por linha.')}
+  draft=c;fitPts(c);drawBar();draw();$('bDone').click()}}
+async function ptStart(){if(T)return toast('Finalize a gravação antes de desenhar.');
+ const m=await pickArea('Novo marcador: como posicionar?',[['tap','👆 Tocar no mapa'],['gps','📍 Na minha posição agora'],['coord','⌖ Digitar coordenada'],['sv','★ Usar coordenada salva']]);if(!m)return;
+ if(m==='tap')return $('bPt').click();if(m==='coord')return $('bCoordPt').click();
+ let g=null;if(m==='gps')g=await getGps();else{if(!S.coords.length)return toast('Nenhuma coordenada salva ainda.');const r=await ask('Coordenada salva',[{k:'s',l:'Qual?',s:S.coords.map(c=>[c.id,c.name])}],'Usar');if(!r)return;const c=S.coords.find(x=>x.id===r.s);if(c)g=[c.lng,c.lat]}
+ if(!g)return;const r=await ask('Novo marcador',[{k:'n',l:'Nome do ponto'}],'Criar');if(!r||!r.n.trim())return;
+ S.points.push({id:uid(),type:$('ptType').value,name:r.n.trim(),lng:g[0],lat:g[1],layer:S.al||'l0'});save();render();V.lng=g[0];V.lat=g[1];V.z=Math.min(maxZ(),Math.max(V.z,17));draw()}
+['bPoly','bStr','bRes','bTer'].forEach(id=>{const o=$(id).onclick;$(id).onclick=function(e){if(e&&e.isTrusted){if(guard())areaStart(id);return}return o.call(this,e)}});
+{const o=$('bPt').onclick;$('bPt').onclick=function(e){if(e&&e.isTrusted){if(guard())ptStart();return}return o.call(this,e)}}
 </script></body></html>
