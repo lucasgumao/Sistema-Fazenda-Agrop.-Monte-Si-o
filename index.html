@@ -687,4 +687,31 @@ async function kmlImport(txt){const d=new DOMParser().parseFromString(txt,'text/
 $('bKml').onclick=()=>$('fKml').click();
 $('fKml').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;if(/\.kmz$/i.test(f.name))return toast('Esse é um KMZ. No Google Earth, use “Salvar lugar como” e escolha o tipo KML.');const r=new FileReader();r.onload=()=>kmlImport(String(r.result));r.readAsText(f)};
 $('bKmlX').onclick=()=>dl('gleba-'+day()+'.kml',toKml(),'application/vnd.google-earth.kml+xml');
+
+/* ===== v9: importação KML seletiva, atualização por nome e deslocamento ===== */
+const shiftC=(c,de,dn)=>c.map(q=>[q[0]+de/(111320*Math.cos(q[1]*Math.PI/180)),q[1]+dn/110574]);
+const num2=v=>parseFloat(String(v==null?'':v).replace(',','.'))||0;
+async function kmlImport(txt){const d=new DOMParser().parseFromString(txt,'text/xml');if(d.getElementsByTagName('parsererror').length)return toast('Arquivo KML inválido.');
+ const cc=e=>{const t=e.getElementsByTagName('coordinates')[0];return t?t.textContent.trim().split(/\s+/).map(a=>a.split(',').map(Number)).filter(a=>a.length>=2&&!a.some(isNaN)).map(a=>[a[0],a[1]]):[]};
+ const items=[];[...d.getElementsByTagName('Placemark')].forEach(pm=>{const n=((pm.getElementsByTagName('name')[0]||{}).textContent||'Sem nome').trim(),ob=pm.getElementsByTagName('outerBoundaryIs')[0];
+  if(ob){const c=cc(ob);if(c.length>3&&c[0][0]===c[c.length-1][0]&&c[0][1]===c[c.length-1][1])c.pop();if(c.length>=3)items.push({n,k:'p',c})}else{const pt=pm.getElementsByTagName('Point')[0];if(pt){const c=cc(pt);if(c[0])items.push({n,k:'m',c:[c[0]]})}}});
+ if(!items.length)return toast('Não encontrei polígonos nem pontos nesse KML. Linhas ainda não são importadas.');
+ const nm=x=>String(x).trim().toLowerCase(),f=[
+  {k:'mode',l:'Se já existir um item com o mesmo nome',s:[['new','Adicionar como novo (não mexe em nada do que já existe)'],['upd','Atualizar só o contorno/posição do que tem o mesmo nome, mantendo cor, função e observações']],v:'new'},
+  {k:'t',l:'Polígonos novos entram como',s:[['p','Piquetes'],['e','Estruturas'],['f','Terra própria (fazenda)'],['x','Terra de terceiros']],v:'p'},
+  {k:'de',l:'Corrigir posição: deslocar para leste (m). Negativo = oeste',v:'0'},{k:'dn',l:'Corrigir posição: deslocar para norte (m). Negativo = sul',v:'0'}];
+ items.forEach((o,i)=>f.push({k:'i'+i,b:1,v:true,l:(o.k==='p'?'▭ ':'📍 ')+o.n+(o.k==='p'?' · '+ha(pArea(o.c)):'')}));
+ const r=await ask('Importar do KML: '+items.length+' itens (desmarque o que não quiser)',f);if(!r)return;
+ const de=num2(r.de),dn=num2(r.dn),ly=S.al||'l0';let add=0,upd=0;
+ items.forEach((o,i)=>{if(!r['i'+i])return;const c=de||dn?shiftC(o.c,de,dn):o.c;
+  if(o.k==='p'){const ex=r.mode==='upd'&&[...S.paddocks,...S.terras].find(p=>nm(p.name)===nm(o.n));if(ex){ex.c=c;upd++;return}
+   if(r.t==='p')S.paddocks.push({id:uid(),name:o.n,c,kind:'p',fn:'pasto',color:PAL[S.paddocks.length%PAL.length],layer:ly});else if(r.t==='e')S.paddocks.push({id:uid(),name:o.n,c,kind:'e',fn:'estr',color:'#e0e0e0',layer:ly});else S.terras.push({id:uid(),name:o.n,c,tipo:r.t==='f'?'propria':'terceiros',layer:ly});add++}
+  else{const ex=r.mode==='upd'&&S.points.find(p=>nm(p.name)===nm(o.n));if(ex){ex.lng=c[0][0];ex.lat=c[0][1];upd++;return}S.points.push({id:uid(),type:'outro',name:o.n,lng:c[0][0],lat:c[0][1],layer:ly});add++}});
+ save();render();fit();toast('KML importado: '+add+' novo(s)'+(upd?', '+upd+' atualizado(s)':'')+'.')}
+
+/* deslocar o que está selecionado (corrige a diferença entre mapas) */
+$('sClr').insertAdjacentHTML('beforebegin','<button class="btn" id="sAll">Selecionar tudo</button><button class="btn" id="sShift">Deslocar</button>');
+$('sAll').onclick=()=>{[['p',S.paddocks],['l',S.lines],['r',S.restr],['m',S.points]].forEach(([k,a])=>a.forEach(o=>SEL.add(k+':'+o.id)));selBar();draw()};
+$('sShift').onclick=async()=>{if(!SEL.size)return toast('Selecione algo antes.');const r=await ask('Deslocar '+SEL.size+' elemento(s)',[{k:'de',l:'Para leste (m). Negativo = oeste',v:'0'},{k:'dn',l:'Para norte (m). Negativo = sul',v:'0'}]);if(!r)return;const de=num2(r.de),dn=num2(r.dn);
+ selItems().forEach(o=>{if(o.c)o.c=shiftC(o.c,de,dn);else{const q=shiftC([[o.lng,o.lat]],de,dn)[0];o.lng=q[0];o.lat=q[1]}});save();render();toast('Deslocado '+de+' m leste, '+dn+' m norte.')};
 </script></body></html>
