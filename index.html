@@ -55,23 +55,25 @@ dialog::backdrop{background:#0008}dialog h2{margin:0 0 12px;font-size:17px}
 body.printing #app{display:block;height:auto}body.printing #pinfo{display:block;font-size:12px;margin-bottom:8px}
 body.printing #mapw{width:100%;height:auto;aspect-ratio:var(--ar);max-height:230mm}body.printing #map{position:static;width:100%!important;height:100%!important}}
 @media(max-width:800px){body.full #app{grid-template-rows:1fr 0}body.full #side{display:none}#app{grid-template-columns:1fr;grid-template-rows:1fr 46%}#side{order:2;border-right:0;border-top:1px solid var(--ln)}header{display:none}#hud .g{grid-template-columns:repeat(2,1fr)}}
+#q{margin-bottom:6px}#qr .li{padding:6px 0}#sbar{position:absolute;left:10px;right:64px;bottom:10px;z-index:6;display:none;gap:8px;flex-wrap:wrap;align-items:center;background:var(--pn);border-radius:12px;padding:8px;box-shadow:0 2px 8px #0007}#sbar.on{display:flex}#sbar b{flex:1;min-width:110px}.fab button.on{background:var(--ac);color:#fff}input[type=range]{padding:0}#kbH{margin-top:14px;color:var(--mut)}#kbH div{margin:4px 0}
 </style></head><body>
 <div id="app">
 <aside id="side">
 <header><b>Gleba</b><span>Piquetes, estruturas, marcadores e serviço do trator</span></header>
-<div class="tabs"><button class="on" data-t="map">Mapa</button><button data-t="trk">Trator</button><button data-t="dash">Painel</button></div>
+<div class="tabs"><button class="on" data-t="map">Mapa</button><button data-t="trk">Trator</button><button data-t="dash">Painel</button><button data-t="gas">Gastos</button></div>
 <div class="body">
 <div class="sec on" id="s-map">
 <h3>Desenhar</h3>
 <div class="row"><button class="btn" id="bPoly">Novo piquete</button><button class="btn" id="bStr">Nova estrutura</button><button class="btn" id="bPt">Novo marcador</button></div>
 <div class="row"><select id="ptType"><option value="camera">Câmera</option><option value="interruptor">Interruptor</option><option value="bebedouro">Bebedouro</option><option value="porteira">Porteira</option><option value="outro">Outro</option></select></div>
 <div class="row"><button class="btn" id="bCoordP">Piquete por coordenadas</button><button class="btn" id="bCoordPt">Marcador por coordenadas</button></div>
+<div class="row"><button class="btn" id="bLine">Nova linha (tubulação/fiação)</button><button class="btn" id="bAsp">Linha de aspersores</button></div>
 <div class="row"><button class="btn" id="bPrint">Imprimir / salvar PDF</button></div>
 <div id="drawBar" class="row" style="display:none"><button class="btn pri" id="bDone">Salvar</button><button class="btn" id="bUndo">Desfazer</button><button class="btn dn" id="bCancel">Cancelar</button></div>
-<h3>Camadas e filtros</h3><div id="lLay"></div><h3>Piquetes</h3><div id="lP"></div><h3>Estruturas</h3><div id="lE"></div><h3>Marcadores</h3><div id="lPt"></div>
+<h3>Camadas</h3><div id="lCam"></div><div class="row"><button class="btn" id="bLay">Nova camada</button></div><h3>Filtros</h3><div id="lLay"></div><h3>Piquetes</h3><div id="lP"></div><h3>Estruturas</h3><div id="lE"></div><h3>Marcadores</h3><div id="lPt"></div><h3>Tubulação e fiação</h3><div id="lL"></div>
 <h3>Mapas offline</h3>
-<div class="row"><div><label>Máximo de detalhe do satélite (se a imagem ficar cinza ou borrada, diminua)</label><select id="nz"><option>16</option><option>17</option><option>18</option><option>19</option></select></div></div>
-<div class="row"><div><label>Detalhe máximo</label><select id="oz"><option value="17">Médio (zoom 17)</option><option value="18" selected>Alto (zoom 18)</option><option value="19">Máximo (zoom 19)</option></select></div></div>
+<div class="row"><div><label>Máximo de detalhe do satélite (se a imagem ficar cinza ou borrada, diminua)</label><select id="nz"><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option><option>21</option></select></div></div>
+<div class="row"><div><label>Detalhe máximo</label><select id="oz"><option value="17">Médio (zoom 17)</option><option value="18" selected>Alto (zoom 18)</option><option value="19">Máximo (zoom 19)</option><option value="20">Extremo (zoom 20, provedor próprio)</option></select></div></div>
 <button class="btn pri big" id="bOff">Baixar a área visível na tela</button>
 <div class="bar" id="offp" style="display:none;margin-top:8px"><i id="offb" style="width:0;background:var(--ac)"></i></div>
 <div id="offt" style="color:var(--mut);margin:4px 0"></div><button class="btn dn" id="bOffX" style="display:none;width:100%">Cancelar download</button>
@@ -82,42 +84,49 @@ body.printing #mapw{width:100%;height:auto;aspect-ratio:var(--ar);max-height:230
 </div>
 <div class="sec" id="s-trk">
 <h3>Nova operação</h3>
-<div class="row"><div><label>Serviço</label><select id="opType"><option value="arar">Aração</option><option value="gradear">Gradagem</option><option value="rocar">Roçada</option><option value="pulverizar">Pulverização</option></select></div>
+<div class="row"><div><label>Serviço</label><select id="opType"><option value="arar">Aração</option><option value="gradear">Gradagem</option><option value="rocar">Roçada</option><option value="pulverizar">Pulverização</option><option value="adubar">Adubação</option></select></div>
 <div><label>Largura útil (m)</label><input id="wid" type="number" step="0.1" min="0.5" value="3"></div></div>
 <div class="row"><div><label>Implemento</label><input id="impl"></div><div><label>Operador</label><input id="oper"></div></div>
 <button class="btn pri big" id="bStart">Iniciar com GPS</button>
 <div class="row" style="margin-top:8px"><button class="btn" id="bManual">Traçar por toques no mapa</button></div>
-<h3>Histórico</h3><div class="chips" id="chips"></div><div id="lO"></div>
+<div class="row"><button class="btn" id="bLanc">Lançar serviço em piquete (sem GPS)</button></div>
+<h3>Programação</h3><div class="row"><button class="btn" id="bPlan">Programar atividade</button></div><div id="lPlan"></div><h3>Histórico</h3><div class="chips" id="chips"></div><div id="lO"></div>
 <div class="row" style="margin-top:10px"><button class="btn" id="bCsv">Exportar CSV</button></div>
 </div>
 <div class="sec" id="s-dash"><div id="dash"></div></div>
+<div class="sec" id="s-gas"><button class="btn pri big" id="bGas">Lançar gasto</button><h3>Resumo</h3><div id="gSum"></div><h3>Lançamentos</h3><div id="lG"></div><div class="row" style="margin-top:10px"><button class="btn" id="bGcsv">Exportar CSV</button></div></div>
 </div></aside>
 <div id="pinfo"></div><div id="mapw"><canvas id="map"></canvas>
 <div id="bm"><button data-b="sat" class="on">Satélite</button><button data-b="hyb">Híbrido</button><button data-b="osm">Mapa</button></div>
 <div class="fab"><button id="bZi">+</button><button id="bZo">−</button><button id="bLoc">◎</button><button id="bFit">⤢</button><button id="bExp" title="Tela cheia">▤</button></div>
-<div id="dbar"><button class="btn pri" id="fClose">✓ Fechar piquete</button><button class="btn" id="fGps">📍 Aqui</button><button class="btn" id="fUndo">Desfazer</button><button class="btn dn" id="fCancel">Cancelar</button></div>
+<div id="dbar"><button class="btn pri" id="fClose">✓ Fechar piquete</button><button class="btn" id="fGps">📍 Aqui</button><button class="btn" id="fMove">✥ Mover</button><button class="btn" id="fKey">Livre</button><button class="btn" id="fUndo">Desfazer</button><button class="btn dn" id="fCancel">Cancelar</button></div>
 <div id="hud"><div class="rec"><span id="hTipo">Gravando</span><button id="bStop">Finalizar</button></div>
 <div class="g"><div><b id="hArea">0,00</b><small>hectares</small></div><div><b id="hSpd">0</b><small>km/h</small></div><div><b id="hRate">0,0</b><small>ha/h</small></div><div><b id="hTime">00:00</b><small id="hAcc">tempo</small></div></div></div>
 </div></div>
 <dialog id="dlg"><form method="dialog" id="dform"></form></dialog><div id="toast"></div>
 
 <script>
+(async()=>{
 const $=id=>document.getElementById(id),K='mapa_fazenda_v3';
-const COR={arar:'#e8892b',gradear:'#e5c317',rocar:'#43c463',pulverizar:'#3b9bff'};
-const NOME={arar:'Aração',gradear:'Gradagem',rocar:'Roçada',pulverizar:'Pulverização'};
+const COR={arar:'#e8892b',gradear:'#e5c317',rocar:'#43c463',pulverizar:'#3b9bff',adubar:'#c06cff'};
+const NOME={arar:'Aração',gradear:'Gradagem',rocar:'Roçada',pulverizar:'Pulverização',adubar:'Adubação'};
 const PT={camera:['#7c5cff','📷','Câmera'],interruptor:['#f2a900','💡','Interruptor'],bebedouro:['#1e90ff','💧','Bebedouro'],aspersor:['#00a6a6','🌀','Aspersor'],bomba:['#c0392b','⚙️','Bomba / registro'],porteira:['#8d6e63','🚪','Porteira'],cocho:['#a1887f','🥣','Cocho'],outro:['#607d8b','📍','Outro']};
-let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
-S=S||{};S.paddocks=S.paddocks||[];S.points=S.points||[];S.ops=S.ops||[];S.filt=S.filt||{};S.lay=S.lay||{};S.fm=S.fm||{};
-const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){toast('Sem espaço no navegador. Exporte um backup.')}};
+const GD=()=>new Promise((ok,no)=>{const r=indexedDB.open('gleba_data',1);r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('st');d.createObjectStore('img')};r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
+const gop=(st,m,fn)=>GD().then(d=>new Promise((ok,no)=>{const t=d.transaction(st,m),r=fn(t.objectStore(st));t.oncomplete=()=>ok(r.result);t.onerror=()=>no(t.error)}));
+const HG=new Set();let MIG=0;
+let WL=null,HV=null,TM=0;const KS={x:0,y:0};let S=await gop('st','readonly',s=>s.get('S')).catch(()=>null);
+if(!S){try{S=JSON.parse(localStorage.getItem(K));if(S)MIG=1}catch(e){}}
+S=S||{};S.paddocks=S.paddocks||[];S.points=S.points||[];S.ops=S.ops||[];S.plan=S.plan||[];S.lines=S.lines||[];S.layers=S.layers&&S.layers.length?S.layers:[{id:'l0',name:'Fazenda',vis:1}];S.gastos=S.gastos||[];S.filt=S.filt||{};S.lay=S.lay||{};S.fm=S.fm||{};
+let svT=0;const flush=()=>{clearTimeout(svT);svT=0;let c;try{c=structuredClone(S)}catch(e){c=JSON.parse(JSON.stringify(S))}
+ gop('st','readwrite',s=>s.put(c,'S')).then(()=>{if(MIG){try{localStorage.removeItem(K)}catch(e){}MIG=0}}).catch(()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){toast('Sem espaço no navegador. Exporte um backup.')}})};
+const save=()=>{clearTimeout(svT);svT=setTimeout(flush,200)};
+addEventListener('pagehide',()=>{if(svT)flush()});document.addEventListener('visibilitychange',()=>{if(document.hidden&&svT)flush()});
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 const fmt=(n,d=2)=>n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const ha=m=>fmt(m/1e4)+' ha';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',3200)}
-function ask(title,fields){return new Promise(res=>{
- $('dform').innerHTML='<h2>'+esc(title)+'</h2>'+fields.map(f=>`<div style="margin-bottom:10px"><label>${esc(f.l)}</label>${f.t?`<textarea name="${f.k}"></textarea>`:`<input name="${f.k}">`}</div>`).join('')+'<div class="row"><button class="btn" value="x">Cancelar</button><button class="btn pri" value="ok">Salvar</button></div>';
- const d=$('dlg');d.onclose=()=>{if(d.returnValue==='ok'){const o={};new FormData($('dform')).forEach((v,k)=>o[k]=v);res(o)}else res(null)};d.showModal()})}
-
 /* ===== motor do mapa (sem bibliotecas) ===== */
 const cv=$('map'),ctx=cv.getContext('2d');
 let W=0,H=0,dpr=1,V={lng:-50,lat:-15,z:4},bm='sat',mode=null,draft=[],edit=null,T=null,wid=null,me=null,pend=false;
@@ -127,7 +136,7 @@ const cache=new Map();let NZ=S.nz||17;
 let _db;const db=()=>_db||(_db=new Promise((ok,no)=>{const r=indexedDB.open('fazenda_tiles',1);r.onupgradeneeded=()=>r.result.createObjectStore('t');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}));
 const idb=(m,fn)=>db().then(d=>new Promise((ok,no)=>{const t=d.transaction('t',m),r=fn(t.objectStore('t'));t.oncomplete=()=>ok(r.result);t.onerror=()=>no(t.error)}));
 const getTile=u=>idb('readonly',s=>s.get(u)).catch(()=>null);
-function tile(u){let i=cache.get(u);if(!i){i=new Image();i.onload=()=>{i.ok=1;draw()};cache.set(u,i);
+function tile(u){let i=cache.get(u);if(!i){i=new Image();i.onload=()=>{i.ok=1;draw()};i.onerror=()=>{if(cache.get(u)===i)cache.delete(u)};cache.set(u,i);
  getTile(u).then(b=>{i.src=b?URL.createObjectURL(b):u});
  if(cache.size>700){const k=cache.keys().next().value,o=cache.get(k);if(o.src.startsWith('blob:'))URL.revokeObjectURL(o.src);cache.delete(k)}}return i}
 const wp=(lng,lat,z=V.z)=>{const s=256*2**z,n=Math.sin(lat*Math.PI/180);return[(lng+180)/360*s,(.5-Math.log((1+n)/(1-n))/(4*Math.PI))*s]};
@@ -143,33 +152,39 @@ function paint(){pend=false;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#1b
  TL[bm].forEach(t=>{for(let ty=Math.floor((c[1]-H/2/k)/256);ty<=Math.floor((c[1]+H/2/k)/256);ty++){if(ty<0||ty>=n)continue;
   for(let tx=Math.floor((c[0]-W/2/k)/256);tx<=Math.floor((c[0]+W/2/k)/256);tx++){const u=t.replace('{z}',zi).replace('{x}',((tx%n)+n)%n).replace('{y}',ty),im=tile(u);
    if(im.ok)ctx.drawImage(im,(tx*256-c[0])*k+W/2,(ty*256-c[1])*k+H/2,256*k+.6,256*k+.6)}}});
- const m=mpp();ctx.lineCap='butt';ctx.lineJoin='round';
+ drawOv();const m=mpp();ctx.lineCap='butt';ctx.lineJoin='round';
  S.ops.forEach(o=>{if(S.filt[o.type]===false||o.hide||S.lay.o===false)return;path(o.track);ctx.globalAlpha=.5;ctx.strokeStyle=COR[o.type];ctx.lineWidth=Math.max(2,o.width/m);ctx.stroke();ctx.globalAlpha=1});
  if(T&&T.pts.length){path(T.pts);ctx.globalAlpha=.55;ctx.strokeStyle=COR[T.type];ctx.lineWidth=Math.max(2,T.width/m);ctx.stroke();ctx.globalAlpha=1;ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke()}
  ctx.font='600 13px system-ui';ctx.textAlign='center';
- S.paddocks.forEach(p=>{if(!vis(p))return;const c=p.c,col=p.color||'#ffffff';path(c,true);ctx.globalAlpha=.22;ctx.fillStyle=col;ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle=col;ctx.lineWidth=p.kind==='e'?2:3;ctx.stroke();
+ sortL(S.paddocks).forEach(p=>{if(!vis(p)||!lOn(p)||(mode==='edit'&&edit.p===p))return;const c=p.c,col=p.color||'#ffffff';path(c,true);ctx.globalAlpha=.22;ctx.fillStyle=col;ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle=col;ctx.lineWidth=p.kind==='e'?2:3;ctx.stroke();
   const a=c.reduce((s,q)=>[s[0]+q[0]/c.length,s[1]+q[1]/c.length],[0,0]),s=sp(a[0],a[1]);ctx.textAlign='center';ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;
   let y=s[1];ctx.font='22px system-ui';ctx.fillText((FN[p.fn]||['','▫️'])[1],s[0],y);ctx.font='600 13px system-ui';
   if(!p.hName){y+=18;ctx.fillText(p.name,s[0],y)}if(!p.hArea){y+=16;ctx.fillText(ha(pArea(c)),s[0],y)}if(p.obs&&p.sObs){y+=16;ctx.fillText(p.obs,s[0],y)}
   if(p.sDim)c.forEach((q,i)=>{const r=c[(i+1)%c.length],m=sp((q[0]+r[0])/2,(q[1]+r[1])/2);ctx.fillText(fmt(dist(q,r),0)+' m',m[0],m[1])});ctx.shadowBlur=0});
- S.points.forEach(p=>{if(p.hide||S.lay.m===false||S.fm[p.type]===false)return;const s=sp(p.lng,p.lat),q=PT[p.type]||PT.outro;ctx.beginPath();ctx.arc(s[0],s[1],15,0,7);ctx.fillStyle=q[0];ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();
+ if(S.lay.l!==false)sortL(S.lines).forEach(l=>{if(!lOn(l))return;path(l.c);ctx.strokeStyle=l.kind==='fio'?'#ffd400':'#2bb7ff';ctx.lineWidth=3;ctx.setLineDash(l.sub?[8,6]:[]);ctx.stroke();ctx.setLineDash([]);
+  const a=sp(...l.c[Math.floor(l.c.length/2)]);ctx.font='600 12px system-ui';ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText(l.name+' · '+fmt(l.c.reduce((t,q,i)=>i?t+dist(l.c[i-1],q):0,0),0)+' m',a[0],a[1]-8);ctx.shadowBlur=0});
+ sortL(S.points).forEach(p=>{if(p.hide||!lOn(p)||S.lay.m===false||S.fm[p.type]===false)return;const s=sp(p.lng,p.lat),q=PT[p.type]||PT.outro;if(p.r){ctx.beginPath();ctx.arc(s[0],s[1],p.r/m,0,7);ctx.fillStyle='rgba(0,166,166,.15)';ctx.fill();ctx.strokeStyle='rgba(0,166,166,.6)';ctx.lineWidth=1;ctx.stroke()}ctx.beginPath();ctx.arc(s[0],s[1],15,0,7);ctx.fillStyle=q[0];ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();
   ctx.font='16px system-ui';ctx.fillStyle='#fff';ctx.fillText(q[1],s[0],s[1]+6);ctx.font='600 13px system-ui';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText(p.name,s[0],s[1]+32);if(p.obs&&p.sObs)ctx.fillText(p.obs,s[0],s[1]+48);ctx.shadowBlur=0});
  const dr=mode==='edit'?edit.c:draft;
- if(dr.length){path(dr,mode==='edit');ctx.strokeStyle='#fff';ctx.setLineDash([6,5]);ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
-  dr.forEach(q=>{const s=sp(q[0],q[1]);ctx.beginPath();ctx.arc(s[0],s[1],mode==='edit'?10:5,0,7);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#1f7a52';ctx.lineWidth=3;ctx.stroke()})}
+ if(dr.length){path(dr,mode==='edit');if(mode==='edit'){ctx.fillStyle='rgba(255,255,255,.2)';ctx.fill()}ctx.strokeStyle='#fff';ctx.setLineDash([6,5]);ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
+  dr.forEach((q,ix)=>{const s=sp(q[0],q[1]);ctx.beginPath();ctx.arc(s[0],s[1],mode==='edit'?10:5,0,7);ctx.fillStyle=mode==='edit'&&edit.sel===ix?'#ffd400':'#fff';ctx.fill();ctx.strokeStyle='#1f7a52';ctx.lineWidth=3;ctx.stroke()})}
+ if(mode==='poly'&&draft.length&&HV){const a=sp(...draft[draft.length-1]),b=sp(HV[0],HV[1]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.strokeStyle='rgba(255,255,255,.6)';ctx.setLineDash([3,5]);ctx.lineWidth=1.5;ctx.stroke();ctx.setLineDash([])}
  if(me){const s=sp(me.lng,me.lat);if(me.acc){ctx.beginPath();ctx.arc(s[0],s[1],me.acc/m,0,7);ctx.fillStyle='rgba(47,128,255,.18)';ctx.fill()}ctx.beginPath();ctx.arc(s[0],s[1],8,0,7);ctx.fillStyle='#2f80ff';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke()}
- let d=[1,2,5,10,20,50,100,200,500,1000,2000,5000].find(x=>x/m>=70)||5000,px=d/m;ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.textAlign='left';ctx.fillText(d>=1000?d/1000+' km':d+' m',12,H-(T?96:30));ctx.fillRect(12,H-(T?90:24),px,3);ctx.shadowBlur=0}
+ let d=[1,2,5,10,20,50,100,200,500,1000,2000,5000].find(x=>x/m>=70)||5000,px=d/m;ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.textAlign='left';ctx.fillText(d>=1000?d/1000+' km':d+' m',12,H-(T?96:30));ctx.fillRect(12,H-(T?90:24),px,3);ctx.shadowBlur=0;drawTop()}
 function zoomAt(x,y,nz){const g=ll(x,y);V.z=Math.min(NZ+3,Math.max(2,nz));const c=wp(g[0],g[1]),r=unp(c[0]-(x-W/2),c[1]-(y-H/2));V.lng=r[0];V.lat=r[1];draw()}
 const P=new Map();let G=null;
 cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);P.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
- if(P.size===1){G={t:Date.now(),sx:e.offsetX,sy:e.offsetY,mv:false,h:null};
-  if(mode==='edit')edit.c.forEach((q,i)=>{const s=sp(q[0],q[1]);if(Math.hypot(s[0]-e.offsetX,s[1]-e.offsetY)<22)G.h=i})}
+ if(P.size===1){G={t:Date.now(),sx:e.offsetX,sy:e.offsetY,mv:false,h:null,vx:0,vy:0};
+  if(mode==='edit'){edit.c.forEach((q,i)=>{const s=sp(q[0],q[1]);if(Math.hypot(s[0]-e.offsetX,s[1]-e.offsetY)<22)G.h=i});
+   if(G.h!=null){edit.sel=G.h;const c=edit.c,n=c.length,a=sp(...c[(G.h+n-1)%n]),b=sp(...c[(G.h+1)%n]);G.o=sp(...c[G.h]);G.dir=[b[0]-a[0],b[1]-a[1]];G.pre=c.map(q=>q.slice())}
+   else if(edit.mv&&inPoly(e.offsetX,e.offsetY,edit.c)){G.body=1;G.c0=edit.c.map(q=>q.slice());G.pre=G.c0.map(q=>q.slice())}}
+  if(mode==='mvpt'){const s=sp(edit.pt.lng,edit.pt.lat);if(Math.hypot(s[0]-e.offsetX,s[1]-e.offsetY)<26){G.hp=edit.pt;G.o=s;G.p0=[edit.pt.lng,edit.pt.lat]}}}
  else{const[a,b]=[...P.values()];G.pd=Math.hypot(a.x-b.x,a.y-b.y);G.pz=V.z;G.mv=true}};
-cv.onpointermove=e=>{const p=P.get(e.pointerId);if(!p)return;const dx=e.offsetX-p.x,dy=e.offsetY-p.y;p.x=e.offsetX;p.y=e.offsetY;
+cv.onpointermove=e=>{const p=P.get(e.pointerId);if(!p){hover(e);return}if(G&&G.stop)return;const dx=e.offsetX-p.x,dy=e.offsetY-p.y;p.x=e.offsetX;p.y=e.offsetY;if(G&&(G.h!=null||G.body||G.hp)){const f=(e.ctrlKey||e.metaKey||TM===2)?.1:1;G.vx+=dx*f;G.vy+=dy*f}
  if(P.size===2){const[a,b]=[...P.values()];zoomAt((a.x+b.x)/2,(a.y+b.y)/2,G.pz+Math.log2(Math.hypot(a.x-b.x,a.y-b.y)/G.pd))}
  else{if(Math.hypot(e.offsetX-G.sx,e.offsetY-G.sy)>8)G.mv=true;
-  if(G.mv){if(G.h!=null){edit.c[G.h]=ll(e.offsetX,e.offsetY)}else{const c=wp(V.lng,V.lat),r=unp(c[0]-dx,c[1]-dy);V.lng=r[0];V.lat=r[1]}draw()}}};
-cv.onpointerup=cv.onpointercancel=e=>{if(P.size===1&&G&&!G.mv&&Date.now()-G.t<600&&e.type==='pointerup')tap(e.offsetX,e.offsetY);P.delete(e.pointerId)};
+  if(G.mv){if(G.h!=null||G.body||G.hp){dragApply(e)}else{const c=wp(V.lng,V.lat),r=unp(c[0]-dx,c[1]-dy);V.lng=r[0];V.lat=r[1]}draw()}}};
+cv.onpointerup=cv.onpointercancel=e=>{if(G&&P.size===1&&G.mv&&!G.stop){if((G.h!=null||G.body)&&G.pre)edit.u.push(G.pre);if(G.hp)save()}if(P.size===1&&G&&!G.mv&&Date.now()-G.t<600&&e.type==='pointerup')tap(e.offsetX,e.offsetY);P.delete(e.pointerId)};
 cv.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.offsetX,e.offsetY,V.z-e.deltaY/300)},{passive:false});
 $('bZi').onclick=()=>zoomAt(W/2,H/2,V.z+1);$('bZo').onclick=()=>zoomAt(W/2,H/2,V.z-1);
 $('bm').onclick=e=>{const b=e.target.dataset.b;if(b){bm=b;document.querySelectorAll('#bm button').forEach(x=>x.classList.toggle('on',x.dataset.b===b));draw()}};
@@ -230,34 +245,38 @@ function render(){
  $('lP').innerHTML=S.paddocks.map(p=>`<div class="li"><div class="t"><b>${esc(p.name)}</b><small>${ha(pArea(p.c))}</small></div><button class="btn s" data-z="${p.id}">Ver</button><button class="btn s" data-e="${p.id}">Editar</button><button class="btn s dn" data-dp="${p.id}">X</button></div>`).join('')||'<div class="empty">Nenhum piquete. Toque em “Novo piquete” e marque os cantos no mapa.</div>';
  $('lPt').innerHTML=S.points.map(p=>`<div class="li"><span class="dot" style="background:${(PT[p.type]||PT.outro)[0]}"></span><div class="t">${esc(p.name)}<small>${p.type}</small></div><button class="btn s" data-zp="${p.id}">Ver</button><button class="btn s dn" data-dpt="${p.id}">X</button></div>`).join('')||'<div class="empty">Nenhum ponto.</div>';
  $('chips').innerHTML=Object.keys(NOME).map(t=>`<div class="chip ${S.filt[t]===false?'off':''}" data-f="${t}"><span class="dot" style="background:${COR[t]}"></span>${NOME[t]}</div>`).join('');
- $('lO').innerHTML=S.ops.slice().reverse().filter(o=>S.filt[o.type]!==false).map(o=>{const h=(o.fim-o.date)/36e5;return `<div class="li"><span class="dot" style="background:${COR[o.type]}"></span><div class="t"><b>${NOME[o.type]}</b> · ${ha(o.area)}<small>${new Date(o.date).toLocaleDateString('pt-BR')} · ${esc(o.impl||'sem implemento')} · ${fmt(o.width,1)} m · ${esc(o.oper||'—')}</small><small>${fmt(o.over,0)}% sobreposição${h>0?' · '+fmt(o.area/1e4/h,1)+' ha/h':''}</small></div><button class="btn s" data-h="${o.id}">${o.hide?'Mostrar':'Ocultar'}</button><button class="btn s dn" data-do="${o.id}">X</button></div>`}).join('')||'<div class="empty">Nenhuma operação registrada.</div>';
+ $('lO').innerHTML=S.ops.slice().reverse().filter(o=>S.filt[o.type]!==false).map(o=>{const h=(o.fim-o.date)/36e5;return `<div class="li"><span class="dot" style="background:${COR[o.type]}"></span><div class="t"><b>${NOME[o.type]}</b> · ${ha(o.area)}<small>${new Date(o.date).toLocaleDateString('pt-BR')} · ${esc(o.impl||'sem implemento')} · ${fmt(o.width,1)} m · ${esc(o.oper||'—')}</small><small>${o.manual?'Lançamento manual':fmt(o.over,0)+'% sobreposição'}${!o.manual&&h>0?' · '+fmt(o.area/1e4/h,1)+' ha/h':''}${pqNames(o)?' · '+esc(pqNames(o)):''}</small></div><button class="btn s" data-og="${o.id}">+ Gasto</button><button class="btn s" data-h="${o.id}">${o.hide?'Mostrar':'Ocultar'}</button><button class="btn s dn" data-do="${o.id}">X</button></div>`}).join('')||'<div class="empty">Nenhuma operação registrada.</div>';
  renderOff();draw()}
 function dash(){const tot=S.ops.reduce((a,o)=>a+o.area,0),pa=S.paddocks.filter(p=>p.kind!=='e').reduce((a,p)=>a+pArea(p.c),0),hrs=S.ops.reduce((a,o)=>a+(o.fim-o.date)/36e5,0);
- let h=`<div class="kpis"><div class="kpi"><b>${fmt(pa/1e4,1)}</b><small>ha em piquetes</small></div><div class="kpi"><b>${fmt(tot/1e4,1)}</b><small>ha trabalhados</small></div><div class="kpi"><b>${S.ops.length}</b><small>operações</small></div><div class="kpi"><b>${hrs>0?fmt(tot/1e4/hrs,1):'—'}</b><small>ha/h médio</small></div></div><h3>Cobertura por piquete</h3>`;
- S.paddocks.filter(p=>p.kind!=='e').forEach(p=>{let r='';Object.keys(NOME).forEach(t=>{const pc=covP(p,t)*100;if(pc>.5)r+=`<div class="cov"><div class="h"><span>${NOME[t]}</span><b>${fmt(pc,0)}%</b></div><div class="bar"><i style="width:${pc}%;background:${COR[t]}"></i></div></div>`});
+ let h=`<div class="kpis"><div class="kpi"><b>${fmt(pa/1e4,1)}</b><small>ha em piquetes</small></div><div class="kpi"><b>${fmt(tot/1e4,1)}</b><small>ha trabalhados</small></div><div class="kpi"><b>${S.ops.length}</b><small>operações</small></div><div class="kpi"><b>${hrs>0?fmt(S.ops.filter(o=>!o.manual).reduce((a,o)=>a+o.area,0)/1e4/hrs,1):'—'}</b><small>ha/h médio</small></div></div><h3>Cobertura por piquete</h3>`;
+ S.paddocks.filter(p=>p.kind!=='e').forEach(p=>{let r='';Object.keys(NOME).forEach(t=>{const pc=Math.max(covP(p,t),...S.ops.filter(o=>o.manual&&o.type===t&&o.pid===p.id).map(o=>(o.pct||100)/100))*100;if(pc>.5)r+=`<div class="cov"><div class="h"><span>${NOME[t]}</span><b>${fmt(pc,0)}%</b></div><div class="bar"><i style="width:${pc}%;background:${COR[t]}"></i></div></div>`});
   h+=`<div style="margin-bottom:14px"><b>${esc(p.name)}</b> <small style="color:var(--mut)">${ha(pArea(p.c))}</small>${r||'<div style="color:var(--mut)">Nenhum serviço registrado.</div>'}</div>`});
  $('dash').innerHTML=h+(S.paddocks.length?'':'<div class="empty">Desenhe piquetes para ver a cobertura.</div>')}
-function drawBar(){const on=mode==='poly'||mode==='edit';$('drawBar').style.display='none';$('dbar').classList.toggle('on',on);$('fClose').textContent=mode==='edit'?'✓ Salvar edição':'✓ Fechar piquete';$('fGps').style.display=mode==='poly'?'':'none';$('fClose').disabled=mode==='poly'&&draft.length<3;$('bDone').disabled=mode==='poly'&&draft.length<3;$('bPoly').classList.toggle('on',mode==='poly');$('bPt').classList.toggle('on',mode==='point');draw()}
-function cancelDraw(){mode=null;draft=[];edit=null;drawBar()}
-$('bPoly').onclick=()=>{cancelDraw();mode='poly';drawBar();toast('Toque nos cantos do piquete.')};
-$('bPt').onclick=()=>{const m=mode==='point';cancelDraw();if(!m){mode='point';drawBar();toast('Toque no mapa para posicionar.')}};
-$('bUndo').onclick=()=>{draft.pop();drawBar()};$('bCancel').onclick=cancelDraw;
-$('bDone').onclick=async()=>{if(mode==='poly'){const r=await metaDlg(null,drawKind);if(!r)return;S.paddocks.push(Object.assign({id:uid(),c:draft.slice(),kind:drawKind},r))}
- else if(mode==='edit')edit.p.c=edit.c.slice();save();cancelDraw();render();toast('Salvo.')};
+function drawBar(){const on=mode==='poly'||mode==='edit'||mode==='mvpt';$('drawBar').style.display='none';$('dbar').classList.toggle('on',on);$('fClose').textContent=mode==='edit'?'✓ Salvar edição':mode==='mvpt'?'✓ Pronto':drawKind==='l'||drawKind==='a'?'✓ Concluir linha':drawKind==='z'?'✓ Fechar área':'✓ Fechar piquete';$('fMove').style.display=mode==='edit'?'':'none';$('fMove').classList.toggle('on',mode==='edit'&&!!edit.mv);$('fKey').style.display=mode==='edit'||mode==='mvpt'?'':'none';curs();$('fGps').style.display=mode==='poly'?'':'none';{const mn=drawKind==='l'||drawKind==='a'?2:3;$('fClose').disabled=mode==='poly'&&draft.length<mn;$('bDone').disabled=mode==='poly'&&draft.length<mn}$('bPoly').classList.toggle('on',mode==='poly');$('bPt').classList.toggle('on',mode==='point');draw()}
+function cancelDraw(){stopWalk();mode=null;draft=[];edit=null;drawBar()}
+$('bPoly').onclick=()=>{if(T)return toast('Finalize a gravação antes de desenhar.');cancelDraw();mode='poly';drawBar();toast('Toque nos cantos do piquete.')};
+$('bPt').onclick=()=>{if(T)return toast('Finalize a gravação antes de desenhar.');const m=mode==='point';cancelDraw();if(!m){mode='point';drawBar();toast('Toque no mapa para posicionar.')}};
+$('bUndo').onclick=()=>{if(mode==='edit'){if(edit.u.length){edit.c=edit.u.pop();draw()}return}draft.pop();drawBar()};$('bCancel').onclick=cancelDraw;
+$('bDone').onclick=async()=>{if(mode==='poly'&&drawKind==='l'){const r=await lineDlg(null);if(!r)return;S.lines.push(Object.assign({id:uid(),c:draft.slice(),layer:S.al||'l0'},r))}
+ else if(mode==='poly'&&drawKind==='a'){const r=await aspDlg();if(!r)return;mkAsp(draft.slice(),r)}
+ else if(mode==='poly'&&drawKind==='z'){if(!(await zoneNew(draft.slice())))return}
+ else if(mode==='poly'){const r=await metaDlg(null,drawKind);if(!r)return;S.paddocks.push(Object.assign({id:uid(),c:draft.slice(),kind:drawKind,layer:S.al||'l0'},r))}
+ else if(mode==='edit')edit.p.c=edit.c.slice();relink();save();cancelDraw();render();toast('Salvo.')};
 let lastTap=0;
 async function tap(x,y){const g=ll(x,y);
+ if(mode==='mvpt'){edit.pt.lng=g[0];edit.pt.lat=g[1];save();draw();return}
  if(mode==='edit'){const c=edit.c,i=c.findIndex(q=>{const t=sp(q[0],q[1]);return Math.hypot(t[0]-x,t[1]-y)<22});
-  if(i>=0){if(c.length>3){c.splice(i,1);draw();toast('Canto removido.')}else toast('Mínimo de 3 cantos.');return}
+  if(i>=0){if(c.length>3){if(confirm('Remover este canto?')){snap();c.splice(i,1);draw()}}else toast('Mínimo de 3 cantos.');return}
   let bi=-1,bd=30;c.forEach((q,j)=>{const a=sp(q[0],q[1]),b=sp(c[(j+1)%c.length][0],c[(j+1)%c.length][1]),dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy||1))),d=Math.hypot(a[0]+t*dx-x,a[1]+t*dy-y);if(d<bd){bd=d;bi=j}});
-  if(bi>=0){c.splice(bi+1,0,g);draw();toast('Canto adicionado. Arraste para ajustar.')}return}
+  if(bi>=0){snap();c.splice(bi+1,0,g);draw();toast('Canto adicionado. Arraste para ajustar.')}return}
  if(!mode){const n=Date.now();if(n-lastTap<350)zoomAt(x,y,V.z+1);lastTap=n}
- if(mode==='poly'){if(draft.length>=3){const f=sp(draft[0][0],draft[0][1]);if(Math.hypot(f[0]-x,f[1]-y)<24)return $('bDone').click()}const k=draft.findIndex((q,i)=>{const s=sp(q[0],q[1]);return i>0&&Math.hypot(s[0]-x,s[1]-y)<22});if(k>0){draft.splice(k,1);drawBar();return}draft.push(g);drawBar()}
- else if(mode==='point'){mode=null;drawBar();const r=await ask('Novo marcador',[{k:'n',l:'Nome (ex.: Câmera curral)'}]);if(r&&r.n.trim()){S.points.push({id:uid(),type:$('ptType').value,name:r.n.trim(),lng:g[0],lat:g[1]});save();render()}}
+ if(mode==='poly'){if(drawKind!=='l'&&drawKind!=='a'&&draft.length>=3){const f=sp(draft[0][0],draft[0][1]);if(Math.hypot(f[0]-x,f[1]-y)<24)return $('bDone').click()}const k=draft.findIndex((q,i)=>{const s=sp(q[0],q[1]);return i>0&&Math.hypot(s[0]-x,s[1]-y)<22});if(k>0){draft.splice(k,1);drawBar();return}draft.push(g);drawBar()}
+ else if(mode==='point'){mode=null;drawBar();const r=await ask('Novo marcador',[{k:'n',l:'Nome (ex.: Câmera curral)'}]);if(r&&r.n.trim()){S.points.push({id:uid(),type:$('ptType').value,name:r.n.trim(),lng:g[0],lat:g[1],layer:S.al||'l0'});save();render()}}
  else if(mode==='manual'&&T)addPt(g[0],g[1],null)}
 document.body.addEventListener('click',e=>{const d=e.target.closest('[data-z],[data-e],[data-dp],[data-zp],[data-dpt],[data-h],[data-do],[data-f]');if(!d)return;const x=d.dataset;
  if(x.z){const p=S.paddocks.find(p=>p.id===x.z),keep=S.paddocks;S.paddocks=[p];fit();S.paddocks=keep;draw()}
  if(x.zp){const p=S.points.find(p=>p.id===x.zp);V.lng=p.lng;V.lat=p.lat;V.z=18;draw()}
- if(x.e){const p=S.paddocks.find(p=>p.id===x.e);cancelDraw();mode='edit';edit={p,c:p.c.map(q=>q.slice())};const keep=S.paddocks;S.paddocks=[p];fit();S.paddocks=keep;drawBar();toast('Arraste os cantos e toque em Salvar.')}
+ if(x.e){const p=S.paddocks.find(p=>p.id===x.e);cancelDraw();mode='edit';edit={p,c:p.c.map(q=>q.slice()),u:[],mv:0,sel:null};const keep=S.paddocks;S.paddocks=[p];fit();S.paddocks=keep;drawBar();toast('Arraste os cantos e toque em Salvar.')}
  if(x.dp&&confirm('Excluir este piquete?')){S.paddocks=S.paddocks.filter(p=>p.id!==x.dp);save();render()}
  if(x.dpt&&confirm('Excluir este marcador?')){S.points=S.points.filter(p=>p.id!==x.dpt);save();render()}
  if(x.h){const o=S.ops.find(o=>o.id===x.h);o.hide=!o.hide;save();render()}
@@ -268,15 +287,15 @@ document.body.addEventListener('click',e=>{const d=e.target.closest('[data-z],[d
 function startTrack(m){const w=parseFloat($('wid').value);if(!(w>0))return toast('Informe a largura útil.');cancelDraw();
  T={type:$('opType').value,impl:$('impl').value,width:w,oper:$('oper').value,pts:[],t0:Date.now(),area:0};mode=m;
  $('hTipo').textContent=NOME[T.type]+(m==='manual'?' (toques)':'');$('hud').classList.add('on');tick();T.iv=setInterval(tick,1000);
- if(m==='gps'){if(!navigator.geolocation){toast('GPS indisponível.');return stopTrack(true)}
+ if(m==='gps'){try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(l=>WL=l).catch(()=>{})}catch(e){}if(!navigator.geolocation){toast('GPS indisponível.');return stopTrack(true)}
   wid=navigator.geolocation.watchPosition(p=>{const c=p.coords;me={lng:c.longitude,lat:c.latitude,acc:c.accuracy};$('hAcc').textContent='±'+Math.round(c.accuracy)+' m';V.lng=me.lng;V.lat=me.lat;if(V.z<16)V.z=17;draw();if(c.accuracy>25)return;addPt(c.longitude,c.latitude,c.speed)},er=>toast('Erro de GPS: '+er.message),{enableHighAccuracy:true,maximumAge:0})}
  else toast('Toque no mapa ao longo do trajeto.');draw()}
 function tick(){if(!T)return;const s=(Date.now()-T.t0)/1e3,h=Math.floor(s/3600),mi=Math.floor(s%3600/60);$('hTime').textContent=(h?h+':':'')+String(mi).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0');$('hRate').textContent=fmt(T.area/1e4/Math.max(s/3600,.003),1)}
 function addPt(lng,lat,sp){const l=T.pts[T.pts.length-1];if(l){if(dist(l,[lng,lat])<2.5||(sp!=null&&sp<.5))return}
- T.pts.push([lng,lat]);$('hSpd').textContent=fmt((sp||0)*3.6,1);
+ T.pts.push([lng,lat]);if(T.pts.length%5===0)try{localStorage.setItem(K+'_rec',JSON.stringify({type:T.type,impl:T.impl,width:T.width,oper:T.oper,t0:T.t0,fim:Date.now(),pts:T.pts}))}catch(e){}$('hSpd').textContent=fmt((sp||0)*3.6,1);
  if(T.pts.length>1&&(T.pts.length%4===0||mode==='manual')){try{T.area=cover(T.pts,T.width,700).area;$('hArea').textContent=fmt(T.area/1e4)}catch(e){}}draw()}
-function stopTrack(cancel){if(wid!=null){navigator.geolocation.clearWatch(wid);wid=null}
- if(T){clearInterval(T.iv);if(!cancel){if(T.pts.length>1){try{const r=cover(T.pts,T.width,2500);S.ops.push({id:uid(),type:T.type,impl:T.impl,width:T.width,oper:T.oper,date:T.t0,fim:Date.now(),track:T.pts,area:r.area,over:Math.max(0,(1-r.area/r.sum)*100)});save();toast('Operação salva: '+ha(r.area))}catch(e){toast('Erro no cálculo da área.')}}else toast('Poucos pontos. Nada foi salvo.')}}
+function stopTrack(cancel){if(WL){try{WL.release()}catch(e){}WL=null}try{localStorage.removeItem(K+'_rec')}catch(e){}if(wid!=null){navigator.geolocation.clearWatch(wid);wid=null}
+ if(T){clearInterval(T.iv);if(!cancel){if(T.pts.length>1){try{const r=saveOp(T);toast('Operação salva: '+ha(r.area))}catch(e){toast('Erro no cálculo da área.')}}else toast('Poucos pontos. Nada foi salvo.')}}
  T=null;mode=null;$('hud').classList.remove('on');$('hArea').textContent='0,00';$('hSpd').textContent='0';render()}
 $('bStart').onclick=()=>startTrack('gps');$('bManual').onclick=()=>startTrack('manual');$('bStop').onclick=()=>stopTrack(false);
 
@@ -284,11 +303,11 @@ $('bStart').onclick=()=>startTrack('gps');$('bManual').onclick=()=>startTrack('m
 function dl(n,t,ty){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:ty}));a.download=n;a.click()}
 const day=()=>new Date().toISOString().slice(0,10);
 $('bBk').onclick=()=>dl('fazenda-backup-'+day()+'.json',JSON.stringify(S),'application/json');
-$('bExpG').onclick=()=>dl('piquetes-'+day()+'.geojson',JSON.stringify({type:'FeatureCollection',features:S.paddocks.map(p=>({type:'Feature',properties:{name:p.name,tipo:p.kind==='e'?'estrutura':'piquete',funcao:p.fn,cor:p.color,obs:p.obs},geometry:{type:'Polygon',coordinates:[[...p.c,p.c[0]]]}}))}),'application/geo+json');
-$('bCsv').onclick=()=>dl('operacoes-'+day()+'.csv','\ufeffdata;servico;implemento;largura_m;operador;area_ha;sobreposicao_pct;duracao_min\n'+S.ops.map(o=>[new Date(o.date).toLocaleString('pt-BR'),NOME[o.type],o.impl,o.width,o.oper,(o.area/1e4).toFixed(2),o.over.toFixed(0),((o.fim-o.date)/6e4).toFixed(0)].map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(';')).join('\n'),'text/csv');
+$('bExpG').onclick=()=>dl('piquetes-'+day()+'.geojson',JSON.stringify({type:'FeatureCollection',features:S.paddocks.map(p=>({type:'Feature',properties:{name:p.name,tipo:p.kind==='e'?'estrutura':'piquete',funcao:p.fn,cor:p.color,obs:p.obs},geometry:{type:'Polygon',coordinates:[[...p.c,p.c[0]]]}})).concat(S.lines.map(l=>({type:'Feature',properties:{name:l.name,tipo:l.kind==='fio'?'fiacao':'tubulacao',subterranea:!!l.sub,diametro:l.diam,profundidade_cm:l.prof},geometry:{type:'LineString',coordinates:l.c}})),S.points.map(p=>({type:'Feature',properties:{name:p.name,tipo:p.type},geometry:{type:'Point',coordinates:[p.lng,p.lat]}})))}),'application/geo+json');
+$('bCsv').onclick=()=>dl('operacoes-'+day()+'.csv','\ufeffdata;servico;implemento;largura_m;operador;area_ha;sobreposicao_pct;duracao_min;piquetes\n'+S.ops.map(o=>[new Date(o.date).toLocaleString('pt-BR'),NOME[o.type],o.impl,o.width,o.oper,(o.area/1e4).toFixed(2).replace('.',','),(o.over||0).toFixed(0),((o.fim-o.date)/6e4).toFixed(0),pqNames(o)].map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(';')).join('\n'),'text/csv');
 $('bImp').onclick=()=>$('fImp').click();
 $('fImp').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);
- if(d.paddocks&&d.ops){if(!confirm('Substituir tudo pelo backup?'))return;S=Object.assign({filt:{}},d)}
+ if(d.paddocks&&d.ops){if(!confirm('Substituir tudo pelo backup?'))return;S=Object.assign({paddocks:[],points:[],ops:[],plan:[],gastos:[],lines:[],layers:[{id:'l0',name:'Fazenda',vis:1}],filt:{},lay:{},fm:{},offline:[]},d)}
  else{const fs=d.type==='Feature'?[d]:d.features;let n=0;fs.forEach(ft=>{const g=ft.geometry;if(g&&g.type==='Polygon'){S.paddocks.push({id:uid(),name:(ft.properties&&(ft.properties.name||ft.properties.nome))||'Piquete '+(S.paddocks.length+1),c:g.coordinates[0].slice(0,-1)});n++}});if(!n)throw 0;toast(n+' piquete(s) importado(s).')}
  save();render();fit()}catch(x){toast('Arquivo inválido. Use backup .json ou GeoJSON com polígonos.')}};r.readAsText(f);e.target.value=''};
 
@@ -298,24 +317,24 @@ const PAL=['#43c463','#e5c317','#3b9bff','#e8892b','#c06cff','#ff6b8a','#2ec4b6'
 let drawKind='p';
 const vis=p=>!p.hide&&S.lay[p.kind==='e'?'e':'p']!==false&&(p.kind==='e'||((S.minHa==null||pArea(p.c)/1e4>=S.minHa)&&(S.maxHa==null||pArea(p.c)/1e4<=S.maxHa)));
 function ask(title,fields){return new Promise(res=>{
- const fld=f=>{const v=esc(f.v??'');return f.s?`<select name="${f.k}">${f.s.map(o=>`<option value="${esc(o[0])}"${o[0]===f.v?' selected':''}>${esc(o[1])}</option>`).join('')}</select>`:f.t?`<textarea name="${f.k}">${v}</textarea>`:f.c?`<input type="color" name="${f.k}" value="${v}" style="height:44px;padding:2px">`:f.b?`<label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px"><input type="checkbox" name="${f.k}" ${f.v?'checked':''} style="width:auto"> ${esc(f.l)}</label>`:`<input name="${f.k}" value="${v}">`};
- $('dform').innerHTML='<h2>'+esc(title)+'</h2>'+fields.map(f=>`<div style="margin-bottom:10px">${f.b?'':`<label>${esc(f.l)}</label>`}${fld(f)}</div>`).join('')+'<div class="row"><button class="btn" value="x">Cancelar</button><button class="btn pri" value="ok">Salvar</button></div>';
- const d=$('dlg');d.onclose=()=>{if(d.returnValue==='ok'){const o={};fields.forEach(f=>{if(f.b)o[f.k]=false});new FormData($('dform')).forEach((v,k)=>o[k]=(o[k]===false?true:v));res(o)}else res(null)};d.showModal()})}
+ const fld=f=>{const v=esc(f.v??'');return f.d?`<input type="date" name="${f.k}" value="${v}">`:f.s?`<select name="${f.k}">${f.s.map(o=>`<option value="${esc(o[0])}"${o[0]===f.v?' selected':''}>${esc(o[1])}</option>`).join('')}</select>`:f.t?`<textarea name="${f.k}">${v}</textarea>`:f.c?`<input type="color" name="${f.k}" value="${v}" style="height:44px;padding:2px">`:f.b?`<label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px"><input type="checkbox" name="${f.k}" ${f.v?'checked':''} style="width:auto"> ${esc(f.l)}</label>`:`<input name="${f.k}" value="${v}">`};
+ $('dform').innerHTML='<h2>'+esc(title)+'</h2>'+fields.map(f=>`<div style="margin-bottom:10px">${f.b?'':`<label>${esc(f.l)}</label>`}${fld(f)}</div>`).join('')+'<div class="row"><button type="button" class="btn" onclick="document.getElementById(\'dlg\').close(\'x\')">Cancelar</button><button class="btn pri" value="ok">Salvar</button></div>';
+ const d=$('dlg');d.onclose=()=>{if(d.returnValue==='ok'){const o={};fields.forEach(f=>{if(f.b)o[f.k]=false});new FormData($('dform')).forEach((v,k)=>o[k]=(o[k]===false?true:v));res(o)}else res(null)};d.returnValue='';d.showModal()})}
 async function metaDlg(p,kind){const v=p||{};const r=await ask((p?'Editar ':'Novo ')+(kind==='e'?'estrutura':'piquete'),[
- {k:'name',l:'Nome',v:v.name},{k:'fn',l:kind==='e'?'Tipo de estrutura':'Função do piquete',s:FNK[kind].map(k=>[k,FN[k][1]+' '+FN[k][0]]),v:v.fn},
+ {k:'name',l:'Nome',v:v.name},{k:'layer',l:'Camada',s:S.layers.map(x=>[x.id,x.name]),v:v.layer||S.al||'l0'},{k:'fn',l:kind==='e'?'Tipo de estrutura':'Função do piquete',s:FNK[kind].map(k=>[k,FN[k][1]+' '+FN[k][0]]),v:v.fn},
  {k:'color',l:'Cor',c:1,v:v.color||(kind==='e'?'#e0e0e0':PAL[S.paddocks.length%PAL.length])},{k:'obs',l:'Observações',t:1,v:v.obs},
  {k:'hName',b:1,l:'Ocultar o nome no mapa',v:v.hName},{k:'hArea',b:1,l:'Ocultar a área no mapa',v:v.hArea},{k:'sDim',b:1,l:'Mostrar as medidas dos lados',v:v.sDim},{k:'sObs',b:1,l:'Mostrar as observações no mapa',v:v.sObs}]);
  if(!r||!r.name.trim())return null;r.name=r.name.trim();return r}
-async function ptDlg(p){const r=await ask('Editar marcador',[{k:'name',l:'Nome',v:p.name},{k:'type',l:'Tipo',s:Object.keys(PT).map(k=>[k,PT[k][1]+' '+PT[k][2]]),v:p.type},{k:'obs',l:'Observações',t:1,v:p.obs},{k:'sObs',b:1,l:'Mostrar as observações no mapa',v:p.sObs}]);if(r&&r.name.trim()){Object.assign(p,r);save();render()}}
+async function ptDlg(p){const r=await ask('Editar marcador',[{k:'name',l:'Nome',v:p.name},{k:'layer',l:'Camada',s:S.layers.map(x=>[x.id,x.name]),v:p.layer||'l0'},{k:'type',l:'Tipo',s:Object.keys(PT).map(k=>[k,PT[k][1]+' '+PT[k][2]]),v:p.type},{k:'obs',l:'Observações',t:1,v:p.obs},{k:'sObs',b:1,l:'Mostrar as observações no mapa',v:p.sObs}]);if(r&&r.name.trim()){Object.assign(p,r);save();render()}}
 $('ptType').innerHTML=Object.keys(PT).map(k=>`<option value="${k}">${PT[k][1]} ${PT[k][2]}</option>`).join('');
-$('bPoly').addEventListener('click',()=>drawKind='p');$('bStr').onclick=()=>{$('bPoly').click();drawKind='e';toast('Toque nos cantos da estrutura (curral, casa, aprisco...).')};
+$('bPoly').addEventListener('click',()=>drawKind='p');$('bStr').onclick=()=>{$('bPoly').click();drawKind='e';curs();toast('Toque nos cantos da estrutura (curral, casa, aprisco...).')};
 function lists(){
- const row=p=>`<div class="li"><span style="font-size:22px">${(FN[p.fn]||['','▫️'])[1]}</span><span class="dot" style="background:${p.color||'#fff'}"></span><div class="t"><b>${esc(p.name)}</b><small>${ha(pArea(p.c))}${p.obs?' · '+esc(p.obs):''}</small></div><div class="acts"><button class="btn s" data-z="${p.id}">Ver</button><button class="btn s" data-xe="${p.id}">Editar</button><button class="btn s" data-e="${p.id}">Forma</button><button class="btn s" data-xh="${p.id}">${p.hide?'Mostrar':'Ocultar'}</button><button class="btn s dn" data-dp="${p.id}">Excluir</button></div></div>`;
+ const row=p=>`<div class="li"><span style="font-size:22px">${(FN[p.fn]||['','▫️'])[1]}</span><span class="dot" style="background:${p.color||'#fff'}"></span><div class="t"><b>${esc(p.name)}</b><small>${ha(pArea(p.c))}${p.obs?' · '+esc(p.obs):''}</small>${hist(p)?`<small>${hist(p)}</small>`:''}</div><div class="acts">${p.kind==='e'?'':`<button class="btn s" data-sv="${p.id}">+ Serviço</button>`}<button class="btn s" data-z="${p.id}">Ver</button><button class="btn s" data-xe="${p.id}">Editar</button><button class="btn s" data-e="${p.id}">Forma</button><button class="btn s" data-xh="${p.id}">${p.hide?'Mostrar':'Ocultar'}</button><button class="btn s dn" data-dp="${p.id}">Excluir</button></div></div>`;
  const pk=S.paddocks.filter(p=>p.kind!=='e'),ek=S.paddocks.filter(p=>p.kind==='e');
  $('lP').innerHTML=pk.map(row).join('')||'<div class="empty">Nenhum piquete. Toque em “Novo piquete” e marque os cantos no mapa.</div>';
  $('lE').innerHTML=ek.map(row).join('')||'<div class="empty">Nenhuma estrutura. Use “Nova estrutura” para desenhar curral, casa, aprisco...</div>';
- $('lPt').innerHTML=S.points.map(p=>{const q=PT[p.type]||PT.outro;return `<div class="li"><span style="font-size:22px">${q[1]}</span><div class="t"><b>${esc(p.name)}</b><small>${q[2]}${p.obs?' · '+esc(p.obs):''}</small></div><div class="acts"><button class="btn s" data-zp="${p.id}">Ver</button><button class="btn s" data-me="${p.id}">Editar</button><button class="btn s" data-mh="${p.id}">${p.hide?'Mostrar':'Ocultar'}</button><button class="btn s dn" data-dpt="${p.id}">Excluir</button></div></div>`}).join('')||'<div class="empty">Nenhum marcador (câmera, interruptor, bebedouro, aspersor...).</div>';
- $('lLay').innerHTML=`<div class="chips">${[['p','Piquetes'],['e','Estruturas'],['m','Marcadores'],['o','Serviços']].map(([k,n])=>`<div class="chip ${S.lay[k]===false?'off':''}" data-lay="${k}">${n}</div>`).join('')}</div>
+ $('lPt').innerHTML=S.points.map(p=>{const q=PT[p.type]||PT.outro;return `<div class="li"><span style="font-size:22px">${q[1]}</span><div class="t"><b>${esc(p.name)}</b><small>${q[2]}${p.obs?' · '+esc(p.obs):''}</small></div><div class="acts"><button class="btn s" data-zp="${p.id}">Ver</button><button class="btn s" data-mm="${p.id}">Mover</button><button class="btn s" data-me="${p.id}">Editar</button><button class="btn s" data-mh="${p.id}">${p.hide?'Mostrar':'Ocultar'}</button><button class="btn s dn" data-dpt="${p.id}">Excluir</button></div></div>`}).join('')||'<div class="empty">Nenhum marcador (câmera, interruptor, bebedouro, aspersor...).</div>';
+ $('lLay').innerHTML=`<div class="chips">${[['p','Piquetes'],['e','Estruturas'],['m','Marcadores'],['l','Linhas'],['o','Serviços']].map(([k,n])=>`<div class="chip ${S.lay[k]===false?'off':''}" data-lay="${k}">${n}</div>`).join('')}</div>
 <label>Categorias de marcadores</label><div class="chips">${Object.keys(PT).map(k=>`<div class="chip ${S.fm[k]===false?'off':''}" data-fm="${k}">${PT[k][1]} ${PT[k][2]}</div>`).join('')}</div>
 <div class="row"><div><label>Piquetes a partir de (ha)</label><input id="minHa" type="number" min="0" step="0.1" value="${S.minHa??''}"></div><div><label>até (ha)</label><input id="maxHa" type="number" min="0" step="0.1" value="${S.maxHa??''}"></div></div>`}
 const _render=render;render=function(){_render();lists()};
@@ -338,14 +357,312 @@ const okLL=q=>Math.abs(q[1])<=90&&Math.abs(q[0])<=180;
 $('bCoordP').onclick=async()=>{const r=await ask('Piquete por coordenadas',[{k:'n',l:'Nome do piquete'},{k:'c',l:'Um canto por linha: latitude, longitude (ex.: -14.8612, -40.8441). Mínimo 3, na ordem em que você contorna a área.',t:1}]);if(!r)return;
  const c=parseCoords(r.c);if(c.length>3&&dist(c[0],c[c.length-1])<.5)c.pop();
  if(!r.n.trim()||c.length<3||!c.every(okLL))return toast('Confira o nome e as coordenadas: mínimo 3 linhas, com latitude e longitude.');
- const p={id:uid(),name:r.n.trim(),c};S.paddocks.push(p);save();render();const k=S.paddocks;S.paddocks=[p];fit();S.paddocks=k;draw();toast('Piquete criado: '+ha(pArea(c)))};
+ const p={id:uid(),name:r.n.trim(),c,layer:S.al||'l0'};S.paddocks.push(p);relink();save();render();const k=S.paddocks;S.paddocks=[p];fit();S.paddocks=k;draw();toast('Piquete criado: '+ha(pArea(c)))};
 $('bCoordPt').onclick=async()=>{const r=await ask('Marcador por coordenadas',[{k:'n',l:'Nome do ponto'},{k:'c',l:'Latitude, longitude (ex.: -14.8612, -40.8441)'}]);if(!r)return;
  const c=parseCoords(r.c)[0];if(!r.n.trim()||!c||!okLL(c))return toast('Confira o nome e a coordenada.');
- S.points.push({id:uid(),type:$('ptType').value,name:r.n.trim(),lng:c[0],lat:c[1]});save();render();V.lng=c[0];V.lat=c[1];V.z=Math.max(V.z,17);draw()};
+ S.points.push({id:uid(),type:$('ptType').value,name:r.n.trim(),lng:c[0],lat:c[1],layer:S.al||'l0'});save();render();V.lng=c[0];V.lat=c[1];V.z=Math.max(V.z,17);draw()};
 $('bPrint').onclick=()=>{const o={};S.ops.forEach(x=>o[x.type]=(o[x.type]||0)+x.area);
  $('pinfo').innerHTML='<h2 style="margin:0">Gleba</h2><div>'+new Date().toLocaleString('pt-BR')+' · a imagem de satélite pode estar desatualizada</div><div style="margin-top:6px">'+S.paddocks.filter(vis).map(p=>esc(p.name)+(p.hArea?'':' ('+ha(pArea(p.c))+')')).join(' · ')+'</div><div>'+Object.keys(o).map(t=>`<span style="color:${COR[t]}">■</span> ${NOME[t]}: ${ha(o[t])}`).join(' &nbsp; ')+'</div>';
  $('mapw').style.setProperty('--ar',W+'/'+H);document.body.classList.add('printing');setTimeout(()=>print(),250)};
 addEventListener('afterprint',()=>{document.body.classList.remove('printing');resize()});
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+/* ===== edicao: mover forma, atalhos, cursores ===== */
+const cur=g=>`url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><path d='M16 3v26M3 16h26' stroke='#fff' stroke-width='4' stroke-linecap='round'/><path d='M16 3v26M3 16h26' stroke='#000' stroke-width='1.5' stroke-linecap='round'/>${g}</svg>`)}") 16 16, crosshair`;
+const CUR={p:cur("<path d='M20 21l9 1-3 8-8-3z' fill='#1f7a52' stroke='#fff' stroke-width='1.5'/>"),e:cur("<rect x='19' y='20' width='10' height='10' fill='#e8892b' stroke='#fff' stroke-width='1.5'/>"),pt:cur("<circle cx='24' cy='25' r='5' fill='#7c5cff' stroke='#fff' stroke-width='1.5'/>")};
+function curs(h){cv.style.cursor=h||(mode==='poly'?(drawKind==='e'?CUR.e:CUR.p):mode==='point'?CUR.pt:mode==='manual'?CUR.p:mode==='edit'?(edit.mv?'move':'crosshair'):mode==='mvpt'?'move':'grab')}
+function inPoly(x,y,c){let r=false;const s=c.map(q=>sp(q[0],q[1]));for(let i=0,j=s.length-1;i<s.length;j=i++)if((s[i][1]>y)!==(s[j][1]>y)&&x<(s[j][0]-s[i][0])*(y-s[i][1])/(s[j][1]-s[i][1])+s[i][0])r=!r;return r}
+function snap(){edit.u.push(edit.c.map(q=>q.slice()));if(edit.u.length>50)edit.u.shift()}
+function hover(e){const x=e.offsetX,y=e.offsetY;if(mode==='poly'&&draft.length){HV=ll(x,y);draw()}
+ if(mode==='edit'){const n=edit.c.some(q=>{const s=sp(q[0],q[1]);return Math.hypot(s[0]-x,s[1]-y)<22});curs(n||(edit.mv&&inPoly(x,y,edit.c))?'move':'crosshair')}}
+cv.onpointerleave=()=>{HV=null;draw()};
+function dragApply(e){let ex=G.vx,ey=G.vy;if(KS.x||TM===3)ey=0;if(KS.y||TM===4)ex=0;
+ if(G.body){G.c0.forEach((q,i)=>{const s=sp(q[0],q[1]);edit.c[i]=ll(s[0]+ex,s[1]+ey)});return}
+ let t=[G.o[0]+ex,G.o[1]+ey];
+ if((e.shiftKey||TM===1)&&G.dir){const d=G.dir,l=d[0]*d[0]+d[1]*d[1]||1,u=((t[0]-G.o[0])*d[0]+(t[1]-G.o[1])*d[1])/l;t=[G.o[0]+u*d[0],G.o[1]+u*d[1]]}
+ const g=ll(t[0],t[1]);if(G.hp){G.hp.lng=g[0];G.hp.lat=g[1]}else edit.c[G.h]=g}
+$('fMove').onclick=()=>{edit.mv=edit.mv?0:1;$('fMove').classList.toggle('on',!!edit.mv);curs();toast(edit.mv?'Arraste dentro do piquete para movê-lo inteiro.':'Modo mover desligado.')};
+$('fKey').onclick=()=>{TM=(TM+1)%5;$('fKey').textContent=['Livre','Alinhar','Preciso','Só ↔','Só ↕'][TM]};
+addEventListener('keydown',e=>{const t=document.activeElement&&document.activeElement.tagName;if(/INPUT|TEXTAREA|SELECT/.test(t)||$('dlg').open)return;const k=e.key.toLowerCase();
+ if(k==='x')KS.x=1;if(k==='y')KS.y=1;
+ if(k==='escape'){if(G&&P.size&&(G.pre||G.hp)){if(G.pre)edit.c=G.pre.map(q=>q.slice());if(G.hp&&G.p0){G.hp.lng=G.p0[0];G.hp.lat=G.p0[1]}G.stop=1;draw()}else if(mode&&!T)cancelDraw();return}
+ if(k.startsWith('arrow')&&((mode==='edit'&&edit.sel!=null)||mode==='mvpt')){e.preventDefault();const st=e.shiftKey?10:1,dx=k==='arrowright'?st:k==='arrowleft'?-st:0,dy=k==='arrowup'?st:k==='arrowdown'?-st:0;
+  if(mode==='edit'){snap();const q=edit.c[edit.sel];q[0]+=dx/(111320*Math.cos(q[1]*Math.PI/180));q[1]+=dy/110574}
+  else{const q=edit.pt;q.lng+=dx/(111320*Math.cos(q.lat*Math.PI/180));q.lat+=dy/110574;save()}draw()}});
+addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(k==='x')KS.x=0;if(k==='y')KS.y=0});
+addEventListener('blur',()=>{KS.x=KS.y=0});
+document.body.addEventListener('click',e=>{const d=e.target.closest('[data-mm]');if(!d)return;if(T)return toast('Finalize a gravação antes.');const p=S.points.find(x=>x.id===d.dataset.mm);cancelDraw();mode='mvpt';edit={pt:p,u:[],sel:null};V.lng=p.lng;V.lat=p.lat;if(V.z<17)V.z=18;drawBar();toast('Arraste o marcador ou toque no novo local.')});
+
+/* ===== programacao e gastos ===== */
+const ld=t=>{const d=t?new Date(t):new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const br=d=>d.split('-').reverse().join('/'),num=v=>parseFloat(String(v).replace(',','.'))||0,brl=n=>'R$ '+fmt(n);
+const CAT={veneno:'Veneno',comb:'Combustível',adubo:'Adubo',semente:'Semente',outro:'Outro'},UN=['L','mL','kg','g','t','saco','un'];
+const nu=(q,u)=>u==='mL'?[q/1e3,'L']:u==='g'?[q/1e3,'kg']:[q,u];
+const pOpts=(vazio)=>(vazio?[['','Sem piquete']]:[]).concat(S.paddocks.filter(p=>p.kind!=='e').map(p=>[p.id,p.name+' ('+ha(pArea(p.c))+')']));
+$('bPlan').onclick=async()=>{if(!S.paddocks.some(p=>p.kind!=='e'))return toast('Desenhe um piquete primeiro.');
+ const r=await ask('Programar atividade',[{k:'pid',l:'Piquete',s:pOpts()},{k:'type',l:'Serviço',s:Object.keys(NOME).map(k=>[k,NOME[k]]),v:$('opType').value},{k:'d',l:'Data prevista',d:1,v:ld()},{k:'note',l:'Observação',v:''}]);if(!r)return;
+ S.plan.push({id:uid(),pid:r.pid,type:r.type,d:r.d||ld(),note:r.note.trim()});save();render()};
+async function gasto(pid,oid,ha0,ts){const r=await ask('Lançar gasto',[{k:'cat',l:'Categoria',s:Object.keys(CAT).map(k=>[k,CAT[k]])},{k:'item',l:'Produto (ex.: glifosato, diesel S10, ureia)',v:''},
+  {k:'q',l:'Quantidade total',v:''},{k:'dose',l:ha0?'ou dose por hectare (multiplica pela área do serviço: '+fmt(ha0)+' ha)':'ou dose por hectare (precisa de um serviço)',v:''},{k:'u',l:'Unidade',s:UN.map(u=>[u,u])},
+  {k:'v',l:'Valor total em R$ (opcional)',v:''},{k:'pid',l:'Piquete',s:pOpts(1),v:pid||''},{k:'d',l:'Data',d:1,v:ld(ts)}]);if(!r)return;
+ const q=r.dose.trim()&&ha0?num(r.dose)*ha0:num(r.q);if(!r.item.trim()||!(q>0))return toast('Informe o produto e a quantidade.');
+ S.gastos.push({id:uid(),cat:r.cat,item:r.item.trim(),q,u:r.u,v:num(r.v),pid:r.pid,oid,d:new Date((r.d||ld())+'T12:00:00').getTime()});save();render();toast('Gasto lançado.')}
+$('bGas').onclick=()=>gasto('',null,0);
+$('bGcsv').onclick=()=>dl('gastos-'+ld()+'.csv','\ufeffdata;categoria;produto;quantidade;unidade;valor_rs;piquete\n'+S.gastos.map(g=>{const p=S.paddocks.find(x=>x.id===g.pid);return[new Date(g.d).toLocaleDateString('pt-BR'),CAT[g.cat],g.item,String(g.q).replace('.',','),g.u,g.v.toFixed(2).replace('.',','),p?p.name:''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')}).join('\n'),'text/csv');
+function extras(){const h=ld();
+ $('lPlan').innerHTML=S.plan.filter(q=>!q.done).sort((a,b)=>a.d.localeCompare(b.d)).map(q=>{const p=S.paddocks.find(x=>x.id===q.pid),st=q.d<h?'Atrasada':q.d===h?'Hoje':'';
+  return `<div class="li"><span class="dot" style="background:${COR[q.type]||'#888'}"></span><div class="t"><b>${NOME[q.type]||esc(q.type)}</b> · ${esc(p?p.name:'—')}<small>${br(q.d)}${st?' · <b style="color:var(--dn)">'+st+'</b>':''}${q.note?' · '+esc(q.note):''}</small></div><button class="btn s" data-pc="${q.id}">Concluir</button><button class="btn s dn" data-pd="${q.id}">X</button></div>`}).join('')||'<div class="empty">Nada programado.</div>';
+ const G=S.gastos,cat={},prod={},pq={};G.forEach(g=>{cat[g.cat]=(cat[g.cat]||0)+g.v;const[q,u]=nu(g.q,g.u),k=g.item.toLowerCase()+'|'+u;prod[k]=prod[k]||{n:g.item,u,q:0,v:0,c:g.cat};prod[k].q+=q;prod[k].v+=g.v;if(g.pid)pq[g.pid]=(pq[g.pid]||0)+g.v});
+ const row=(a,b)=>`<div class="li"><div class="t">${a}</div><b>${b}</b></div>`;
+ $('gSum').innerHTML=G.length?`<div class="kpis"><div class="kpi"><b>${brl(G.reduce((a,g)=>a+g.v,0))}</b><small>total gasto</small></div><div class="kpi"><b>${G.length}</b><small>lançamentos</small></div></div><h3>Por categoria</h3>${Object.keys(cat).map(k=>row(CAT[k],brl(cat[k]))).join('')}<h3>Por produto</h3>${Object.values(prod).map(p=>row(esc(p.n)+'<small>'+CAT[p.c]+'</small>',fmt(p.q,p.q%1?2:0)+' '+p.u+(p.v?' · '+brl(p.v):''))).join('')}<h3>Por piquete</h3>${Object.keys(pq).map(id=>{const p=S.paddocks.find(x=>x.id===id);return p?row(esc(p.name)+'<small>'+brl(pq[id]/(pArea(p.c)/1e4))+' por ha</small>',brl(pq[id])):''}).join('')||'<div class="empty">Nenhum gasto ligado a piquete.</div>'}`:'<div class="empty">Nenhum gasto lançado.</div>';
+ $('lG').innerHTML=G.slice().sort((a,b)=>b.d-a.d).map(g=>{const p=S.paddocks.find(x=>x.id===g.pid);return `<div class="li"><div class="t"><b>${esc(g.item)}</b> · ${fmt(g.q,g.q%1?2:0)} ${g.u}<small>${new Date(g.d).toLocaleDateString('pt-BR')} · ${CAT[g.cat]}${p?' · '+esc(p.name):''}${g.v?' · '+brl(g.v):''}</small></div><button class="btn s dn" data-dg="${g.id}">X</button></div>`}).join('')}
+const _r2=render;render=function(){_r2();extras()};
+document.body.addEventListener('click',e=>{const d=e.target.closest('[data-pc],[data-pd],[data-dg],[data-og]');if(!d)return;const x=d.dataset;
+ if(x.pc){const q=S.plan.find(q=>q.id===x.pc);lancar(q.pid,q.type,q.d,q.id)}
+ if(x.pd&&confirm('Remover esta atividade da programação?')){S.plan=S.plan.filter(q=>q.id!==x.pd);save();render()}
+ if(x.dg&&confirm('Excluir este gasto?')){S.gastos=S.gastos.filter(g=>g.id!==x.dg);save();render()}
+ if(x.og){const o=S.ops.find(o=>o.id===x.og);gasto(o.pq&&o.pq[0]?o.pq[0].id:'',o.id,o.area/1e4,o.date)}});
+render();{const at=S.plan.filter(q=>!q.done&&q.d<ld()).length;if(at)setTimeout(()=>toast(at+' atividade(s) atrasada(s) na programação.'),900)}
+
+/* ===== camadas, linhas e aspersores ===== */
+const lOn=o=>{if(o.gid&&HG.has(o.gid))return false;const l=S.layers.find(x=>x.id===(o.layer||'l0'));return !l||l.vis!==0};
+const sortL=a=>{const ix=o=>Math.max(0,S.layers.findIndex(x=>x.id===(o.layer||'l0')));return a.slice().sort((x,y)=>ix(x)-ix(y))};
+async function lineDlg(l){const v=l||{};const r=await ask((l?'Editar':'Nova')+' linha',[{k:'name',l:'Nome',v:v.name},{k:'layer',l:'Camada',s:S.layers.map(x=>[x.id,x.name]),v:v.layer||S.al||'l0'},{k:'kind',l:'Tipo',s:[['tub','Tubulação'],['fio','Fiação']],v:v.kind||'tub'},{k:'sub',l:'Instalação',s:[['1','Subterrânea'],['0','Aérea / superficial']],v:v.sub===0?'0':'1'},{k:'diam',l:'Diâmetro (mm) ou tensão (V)',v:v.diam},{k:'prof',l:'Profundidade (cm)',v:v.prof},{k:'obs',l:'Observações',t:1,v:v.obs}]);
+ if(!r||!r.name.trim())return null;r.name=r.name.trim();r.sub=+r.sub;return r}
+const aspDlg=()=>ask('Linha de aspersores',[{k:'name',l:'Nome base',v:'Aspersor'},{k:'esp',l:'Espaçamento (m)',v:'12'},{k:'off',l:'Deslocamento do primeiro aspersor (m)',v:'0'},{k:'r',l:'Raio de alcance (m, opcional)',v:''},{k:'tub',b:1,l:'Salvar também a linha como tubulação',v:1}]);
+function along(c,d,off){const o=[];let nx=off,run=0;for(let i=1;i<c.length;i++){const L=dist(c[i-1],c[i]);while(nx<=run+L+1e-6){const t=L?(nx-run)/L:0;o.push([c[i-1][0]+(c[i][0]-c[i-1][0])*t,c[i-1][1]+(c[i][1]-c[i-1][1])*t]);nx+=d}run+=L}return o}
+function mkAsp(c,r){const d=num(r.esp);if(d<.5)return toast('Espaçamento inválido.');const P=along(c,d,num(r.off));if(!P.length||P.length>500)return toast('Quantidade de aspersores inválida.');
+ const g=uid(),n=r.name.trim()||'Aspersor';P.forEach((q,i)=>S.points.push({id:uid(),type:'aspersor',name:n+' '+(i+1),lng:q[0],lat:q[1],grp:g,r:num(r.r),layer:S.al||'l0'}));
+ if(r.tub)S.lines.push({id:uid(),name:n+' (linha)',kind:'tub',sub:1,c,layer:S.al||'l0',diam:'',prof:'',obs:''});toast(P.length+' aspersores criados. Use "Mover" na lista para ajustar cada um.')}
+$('bLine').onclick=()=>{if(T)return toast('Finalize a gravação antes de desenhar.');$('bPoly').click();drawKind='l';curs();drawBar();toast('Toque ao longo da linha e depois em Concluir.')};
+$('bAsp').onclick=()=>{if(T)return toast('Finalize a gravação antes de desenhar.');$('bPoly').click();drawKind='a';curs();drawBar();toast('Trace a linha onde ficarão os aspersores.')};
+$('bLay').onclick=async()=>{const r=await ask('Nova camada',[{k:'n',l:'Nome (ex.: Irrigação, Elétrica)',v:''}]);if(!r||!r.n.trim())return;const l={id:uid(),name:r.n.trim(),vis:1};S.layers.push(l);S.al=l.id;save();render()};
+const _r3=render;render=function(){_r3();
+ $('lCam').innerHTML=S.layers.map(l=>`<div class="li"><button class="btn s ${l.vis!==0?'on':''}" data-lv="${l.id}">${l.vis!==0?'Visível':'Oculta'}</button><div class="t"><b>${esc(l.name)}</b>${(S.al||'l0')===l.id?'<small>Camada ativa: novos desenhos entram aqui</small>':''}</div><div class="acts"><button class="btn s" data-la="${l.id}">Ativar</button><button class="btn s" data-lu="${l.id}">↑ Acima</button><button class="btn s" data-ldn="${l.id}">↓ Abaixo</button><button class="btn s" data-lr="${l.id}">Nome</button>${l.id==='l0'?'':`<button class="btn s dn" data-lx="${l.id}">Excluir</button>`}</div></div>`).join('');
+ $('lL').innerHTML=S.lines.map(l=>{const len=l.c.reduce((a,q,i)=>i?a+dist(l.c[i-1],q):0,0),ly=S.layers.find(x=>x.id===(l.layer||'l0'));return `<div class="li"><span class="dot" style="background:${l.kind==='fio'?'#ffd400':'#2bb7ff'}"></span><div class="t"><b>${esc(l.name)}</b><small>${l.kind==='fio'?'Fiação':'Tubulação'} ${l.sub?'subterrânea':'aérea'} · ${fmt(len,0)} m${l.diam?' · '+esc(l.diam):''}${l.prof?' · '+esc(l.prof)+' cm':''}${ly?' · '+esc(ly.name):''}</small></div><div class="acts"><button class="btn s" data-lz="${l.id}">Ver</button><button class="btn s" data-le="${l.id}">Editar</button><button class="btn s dn" data-lk="${l.id}">Excluir</button></div></div>`}).join('')||'<div class="empty">Nenhuma linha. Use “Nova linha” para tubulação ou fiação.</div>'};
+document.body.addEventListener('click',async e=>{const d=e.target.closest('[data-lv],[data-la],[data-lu],[data-ldn],[data-lr],[data-lx],[data-lz],[data-le],[data-lk]');if(!d)return;const x=d.dataset,L=S.layers,i=L.findIndex(l=>l.id===(x.lv||x.la||x.lu||x.ldn||x.lr||x.lx));
+ if(x.lv)L[i].vis=L[i].vis===0?1:0;
+ if(x.la)S.al=x.la;
+ if(x.lu&&i<L.length-1)[L[i],L[i+1]]=[L[i+1],L[i]];
+ if(x.ldn&&i>0)[L[i],L[i-1]]=[L[i-1],L[i]];
+ if(x.lr){const r=await ask('Nome da camada',[{k:'n',l:'Nome',v:L[i].name}]);if(r&&r.n.trim())L[i].name=r.n.trim()}
+ if(x.lx){if(!confirm('Excluir a camada? Os itens dela voltam para a camada "'+L[0].name+'".'))return;[S.paddocks,S.points,S.lines].forEach(a=>a.forEach(o=>{if(o.layer===x.lx)o.layer='l0'}));S.layers=L.filter(l=>l.id!==x.lx);if(S.al===x.lx)S.al='l0'}
+ if(x.lz){const l=S.lines.find(l=>l.id===x.lz),lx=l.c.map(q=>q[0]),ly=l.c.map(q=>q[1]);V.lng=(Math.min(...lx)+Math.max(...lx))/2;V.lat=(Math.min(...ly)+Math.max(...ly))/2;V.z=18;draw();return}
+ if(x.le){const l=S.lines.find(l=>l.id===x.le),r=await lineDlg(l);if(r)Object.assign(l,r)}
+ if(x.lk){if(!confirm('Excluir esta linha?'))return;S.lines=S.lines.filter(l=>l.id!==x.lk)}
+ save();render()});
+
+/* ===== vinculo operacao x piquete / servico manual ===== */
+function opIn(p,o){if(!o.track||o.track.length<2)return 0;const f=LOC(p.c[0][0],p.c[0][1]),m=p.c.map(q=>f(q[0],q[1])),b=bbox(m,0),sc=Math.min(3,1500/Math.max(b[2]-b[0],b[3]-b[1],1));
+ const c=document.createElement('canvas');c.width=Math.ceil((b[2]-b[0])*sc)+1;c.height=Math.ceil((b[3]-b[1])*sc)+1;const x=c.getContext('2d',{willReadFrequently:true});
+ x.fillStyle='#fff';x.beginPath();m.forEach((q,i)=>{const X=(q[0]-b[0])*sc,Y=(q[1]-b[1])*sc;i?x.lineTo(X,Y):x.moveTo(X,Y)});x.fill();
+ x.globalCompositeOperation='source-atop';x.strokeStyle='#f00';x.lineJoin='round';x.lineWidth=o.width*sc;x.beginPath();
+ o.track.forEach((q,i)=>{const r=f(q[0],q[1]),X=(r[0]-b[0])*sc,Y=(r[1]-b[1])*sc;i?x.lineTo(X,Y):x.moveTo(X,Y)});x.stroke();
+ return count(c,(d,i)=>d[i+3]>127&&d[i+1]<128)/sc/sc}
+function paddocksOf(o){if(!o.track||o.track.length<2)return[];const lx=o.track.map(q=>q[0]),ly=o.track.map(q=>q[1]),a=[Math.min(...lx),Math.min(...ly),Math.max(...lx),Math.max(...ly)],e=.0005,out=[];
+ S.paddocks.filter(p=>p.kind!=='e').forEach(p=>{const px=p.c.map(q=>q[0]),py=p.c.map(q=>q[1]);if(Math.max(...px)<a[0]-e||Math.min(...px)>a[2]+e||Math.max(...py)<a[1]-e||Math.min(...py)>a[3]+e)return;
+  try{const m=opIn(p,o);if(m>200)out.push({id:p.id,a:Math.round(m)})}catch(x){}});return out}
+function relink(){S.ops.forEach(o=>{if(!o.manual)o.pq=paddocksOf(o)})}
+function pqNames(o){return(o.pq||[]).map(x=>{const p=S.paddocks.find(q=>q.id===x.id);return p?p.name:null}).filter(Boolean).join(', ')}
+function saveOp(t,extra){const r=cover(t.pts,t.width,2500),o=Object.assign({id:uid(),type:t.type,impl:t.impl,width:t.width,oper:t.oper,date:t.t0,fim:t.fim||Date.now(),track:t.pts,area:r.area,over:Math.max(0,(1-r.area/r.sum)*100)},extra);o.pq=paddocksOf(o);S.ops.push(o);save();return r}
+function hist(p){const L={};S.ops.forEach(o=>{if((o.manual&&o.pid===p.id)||(o.pq||[]).some(x=>x.id===p.id))if(!L[o.type]||o.date>L[o.type])L[o.type]=o.date});
+ return Object.keys(L).map(t=>NOME[t]+' '+new Date(L[t]).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'})).join(' · ')}
+async function lancar(pid,tp,dt,plid){const ps=S.paddocks.filter(p=>p.kind!=='e');if(!ps.length)return toast('Desenhe um piquete primeiro.');
+ const r=await ask('Lançar serviço em piquete',[{k:'pid',l:'Piquete',s:ps.map(p=>[p.id,p.name+' ('+ha(pArea(p.c))+')']),v:pid||ps[0].id},{k:'type',l:'Serviço',s:Object.keys(NOME).map(k=>[k,NOME[k]]),v:tp||$('opType').value},
+  {k:'d',l:'Data',d:1,v:dt||ld()},{k:'pct',l:'% da área do piquete trabalhada',v:'100'},{k:'impl',l:'Implemento',v:$('impl').value},{k:'oper',l:'Operador',v:$('oper').value}]);if(!r)return;
+ if(!zoneGuard(S.paddocks.find(x=>x.id===r.pid),r.type))return;
+ const p=S.paddocks.find(x=>x.id===r.pid),pc=Math.min(100,Math.max(1,parseFloat(String(r.pct).replace(',','.'))||100)),t=new Date((r.d||ld())+'T12:00:00').getTime();
+ S.ops.push({id:uid(),manual:1,pid:p.id,pct:pc,type:r.type,impl:r.impl,oper:r.oper,width:parseFloat($('wid').value)||0,date:t,fim:t,track:[],area:pArea(p.c)*pc/100,over:0,pq:[{id:p.id,a:Math.round(pArea(p.c)*pc/100)}]});if(plid){const q=S.plan.find(x=>x.id===plid);if(q)q.done=1}save();render();toast('Serviço lançado em '+p.name+'.')}
+$('bLanc').onclick=()=>lancar();
+document.body.addEventListener('click',e=>{const d=e.target.closest('[data-sv]');if(d)lancar(d.dataset.sv)});
+try{let ch=0;S.ops.forEach(o=>{if(!o.manual&&!o.pq&&o.track&&o.track.length>1){o.pq=paddocksOf(o);ch=1}});if(ch)save()}catch(e){}
+try{const rc=JSON.parse(localStorage.getItem(K+'_rec')||'null');if(rc&&rc.pts&&rc.pts.length>1&&confirm('Há uma gravação interrompida ('+NOME[rc.type]+', '+rc.pts.length+' pontos). Salvar como operação?')){saveOp(rc);toast('Operação recuperada e salva.')}localStorage.removeItem(K+'_rec')}catch(e){}
+/* ===== MELHORIAS v4: provedor, drone, selecao, grupos, busca, GPS, areas restritas, atalhos ===== */
+S.groups=S.groups||[];S.zones=S.zones||[];S.ov=S.ov||[];S.prov=S.prov||{t:'esri',key:'',url:''};
+const ESRI=SAT,ESRIL=TL.hyb[1],SEL=new Set(),OVI={};
+let selMode=false,box=null,walk=null,OFFB=null,SRC=[],FIND=null,HP=null,UNDO=null;
+const kindOf=k=>({p:S.paddocks,m:S.points,l:S.lines,z:S.zones})[k];
+const getEl=s=>kindOf(s[0]).find(o=>o.id===s.slice(2));
+const selItems=()=>[...SEL].map(s=>({s,k:s[0],o:getEl(s)})).filter(x=>x.o);
+const coords=(k,o)=>k==='m'?[[o.lng,o.lat]]:o.c;
+const memb=g=>[...S.paddocks.filter(o=>o.gid===g.id).map(o=>'p:'+o.id),...S.points.filter(o=>o.gid===g.id).map(o=>'m:'+o.id),...S.lines.filter(o=>o.gid===g.id).map(o=>'l:'+o.id),...S.zones.filter(o=>o.gid===g.id).map(o=>'z:'+o.id)];
+const snapS=()=>{try{UNDO=structuredClone(S)}catch(e){UNDO=JSON.parse(JSON.stringify(S))}};
+function undoDel(){if(!UNDO)return toast('Nada para desfazer.');const u=UNDO;UNDO=null;Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,u);save();render();toast('Exclusão desfeita.')}
+function delIds(ids){const s={p:new Set(),m:new Set(),l:new Set(),z:new Set()};ids.forEach(i=>s[i[0]].add(i.slice(2)));S.paddocks=S.paddocks.filter(o=>!s.p.has(o.id));S.points=S.points.filter(o=>!s.m.has(o.id));S.lines=S.lines.filter(o=>!s.l.has(o.id));S.zones=S.zones.filter(o=>!s.z.has(o.id));ids.forEach(i=>SEL.delete(i))}
+function fitPts(a){if(!a.length)return;const x=a.map(q=>q[0]),y=a.map(q=>q[1]);V.lng=(Math.min(...x)+Math.max(...x))/2;V.lat=(Math.min(...y)+Math.max(...y))/2;for(let z=NZ+2;z>2;z-=.25){V.z=z;const s=a.map(q=>sp(q[0],q[1]));if(Math.max(...s.map(q=>Math.abs(q[0]-W/2)))<W/2-40&&Math.max(...s.map(q=>Math.abs(q[1]-H/2)))<H/2-40)break}draw()}
+function goSel(ids){SEL.clear();ids.forEach(i=>SEL.add(i));const a=selItems().flatMap(x=>coords(x.k,x.o));if(a.length===1){V.lng=a[0][0];V.lat=a[0][1];V.z=Math.max(V.z,18)}else fitPts(a);selUI()}
+
+/* --- interface injetada --- */
+(()=>{const s=$('s-map');
+ s.insertAdjacentHTML('afterbegin','<input id="q" placeholder="🔎 Pesquisar piquete, marcador, grupo, coordenada, lugar…" autocomplete="off"><div id="qr"></div>');
+ $('bPrint').parentNode.insertAdjacentHTML('beforebegin','<div class="row"><button class="btn" id="bSel">⬚ Selecionar</button><button class="btn" id="bZone">🚫 Área restrita</button></div><div class="row"><button class="btn" id="bWalk">📍 Demarcar com GPS</button><button class="btn" id="bDim">📏 Medidas</button></div>');
+ $('lCam').previousElementSibling.insertAdjacentHTML('beforebegin','<h3>Grupos e lotes de aspersores</h3><div class="row"><button class="btn" id="bGrp">Agrupar seleção</button><button class="btn" id="bAll">Selecionar tudo</button></div><div id="lGrp"></div><h3>Áreas restritas</h3><div id="lZ"></div>');
+ const h=t=>[...s.querySelectorAll('h3')].find(x=>x.textContent===t);
+ h('Mapas offline').insertAdjacentHTML('beforebegin','<h3>Qualidade do mapa (satélite)</h3><div class="row"><div><label>Provedor</label><select id="pvT"><option value="esri">Esri (grátis, padrão)</option><option value="mapbox">Mapbox (chave própria)</option><option value="maptiler">MapTiler (chave própria)</option><option value="custom">Outro (URL com {z}/{x}/{y})</option></select></div></div><div class="row"><div><label>Chave da API ou URL</label><input id="pvK" autocomplete="off"></div></div><div class="row"><button class="btn" id="pvA">Aplicar provedor</button></div><div class="row"><button class="btn" id="ovAdd">+ Foto de drone</button><button class="btn" id="offAll">Baixar área da fazenda</button></div><input type="file" id="ovF" accept="image/*" hidden><div id="lOv"></div>');
+ h('Dados').insertAdjacentHTML('beforebegin','<h3>Limpeza</h3><div class="row"><select id="clK"><option value="p">Todos os piquetes</option><option value="e">Todas as estruturas</option><option value="m">Todos os marcadores</option><option value="a">Todos os aspersores</option><option value="l">Todas as linhas</option><option value="z">Todas as áreas restritas</option><option value="o">Histórico do trator</option><option value="g">Todos os gastos</option></select></div><div class="row"><button class="btn dn" id="bClr">Limpar categoria</button><button class="btn" id="bUnd">↶ Desfazer exclusão</button></div>');
+ s.insertAdjacentHTML('beforeend','<details id="kbH"><summary><b>Atalhos de teclado (?)</b></summary><div><b>Enter</b> confirma/fecha o desenho · <b>Esc</b> cancela</div><div><b>Delete / Backspace</b> apaga o último ponto ou os itens selecionados</div><div><b>Ctrl+Z</b> desfaz · <b>Ctrl+A</b> seleciona tudo · <b>Ctrl+G</b> agrupa · <b>Ctrl+S</b> backup · <b>Ctrl+F</b> ou <b>/</b> pesquisa</div><div><b>Ctrl+clique</b> soma à seleção · <b>Ctrl+arrastar</b> caixa (→ dentro, ← tocando)</div><div><b>P</b> piquete · <b>E</b> estrutura · <b>M</b> marcador · <b>L</b> linha · <b>A</b> aspersores · <b>R</b> área restrita · <b>G</b> GPS · <b>S</b> seleção · <b>D</b> medidas · <b>F</b> ajustar · <b>+ −</b> zoom</div><div><b>Setas</b> movem o canto · <b>X / Y</b> travam o eixo ao arrastar</div></details>');
+ $('bExp').insertAdjacentHTML('beforebegin','<button id="bSelF" title="Selecionar (S)">⬚</button>');
+ $('mapw').insertAdjacentHTML('beforeend','<div id="sbar"><b id="sN"></b><button class="btn" id="sGrp">Agrupar</button><button class="btn" id="sLay">Camada</button><button class="btn dn" id="sDel">Excluir</button><button class="btn" id="sClr">✕</button></div>');
+ $('pvT').value=S.prov.t;$('pvK').value=S.prov.t==='custom'?(S.prov.url||''):(S.prov.key||'')})();
+
+/* --- provedor de mapa --- */
+function applyProv(){const p=S.prov,k=encodeURIComponent(p.key||'');
+ if(p.t==='mapbox'&&k){TL.sat=['https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/256/{z}/{x}/{y}@2x?access_token='+k];TL.hyb=['https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token='+k]}
+ else if(p.t==='maptiler'&&k){TL.sat=['https://api.maptiler.com/maps/satellite/256/{z}/{x}/{y}.jpg?key='+k];TL.hyb=['https://api.maptiler.com/maps/hybrid/256/{z}/{x}/{y}.jpg?key='+k]}
+ else if(p.t==='custom'&&/\{z\}/.test(p.url||'')){TL.sat=[p.url];TL.hyb=[p.url]}
+ else{TL.sat=[ESRI];TL.hyb=[ESRI,ESRIL]}cache.clear();draw()}
+$('pvA').onclick=()=>{const t=$('pvT').value,v=$('pvK').value.trim();if(t!=='esri'&&!v)return toast('Informe a chave (ou a URL).');if(t==='custom'&&!(/\{z\}/.test(v)&&/\{x\}/.test(v)&&/\{y\}/.test(v)))return toast('A URL precisa ter {z}, {x} e {y}.');
+ S.prov={t,key:t==='custom'?'':v,url:t==='custom'?v:''};if(t!=='esri'&&NZ<20){NZ=20;S.nz=20;$('nz').value=20}save();applyProv();toast('Provedor aplicado. Se o mapa ficar cinza, confira a chave ou reduza o detalhe máximo.')};
+applyProv();
+const _vb=viewBox;viewBox=function(){return OFFB||_vb()};
+$('offAll').onclick=async()=>{const a=[...S.paddocks.flatMap(p=>p.c),...S.points.map(p=>[p.lng,p.lat]),...S.lines.flatMap(l=>l.c),...S.zones.flatMap(z=>z.c)];if(!a.length)return toast('Desenhe algo primeiro ou use “Baixar a área visível”.');
+ const x=a.map(q=>q[0]),y=a.map(q=>q[1]),m=.0012;OFFB={w:Math.min(...x)-m,e:Math.max(...x)+m,n:Math.max(...y)+m,s:Math.min(...y)-m};try{await $('bOff').onclick()}finally{OFFB=null}};
+
+/* --- foto de drone (camada georreferenciada, guardada no IndexedDB) --- */
+async function ovLoad(){for(const o of S.ov){try{const b=await gop('img','readonly',s=>s.get(o.id));if(b){const i=new Image();i.onload=()=>draw();i.src=URL.createObjectURL(b);OVI[o.id]=i}}catch(e){}}}
+function drawOv(){S.ov.forEach(o=>{const i=OVI[o.id];if(o.vis===0||!i||!i.naturalWidth)return;const a=sp(o.b.w,o.b.n),c=sp(o.b.e,o.b.s);ctx.globalAlpha=o.op??.85;ctx.drawImage(i,a[0],a[1],c[0]-a[0],c[1]-a[1]);ctx.globalAlpha=1})}
+async function ovDlg(o,nw){const r=await ask(nw?'Foto de drone':'Posição da foto',[{k:'n',l:'Nome',v:o.name},{k:'N',l:'Latitude do topo (norte)',v:o.b.n.toFixed(6)},{k:'S',l:'Latitude da base (sul)',v:o.b.s.toFixed(6)},{k:'W',l:'Longitude da esquerda (oeste)',v:o.b.w.toFixed(6)},{k:'E',l:'Longitude da direita (leste)',v:o.b.e.toFixed(6)}]);if(!r)return 0;
+ const b={n:num(r.N),s:num(r.S),w:num(r.W),e:num(r.E)};if(!(b.n>b.s&&b.e>b.w&&okLL([b.w,b.n])&&okLL([b.e,b.s]))){toast('Coordenadas inválidas (norte > sul e leste > oeste).');return 0}o.name=r.n.trim()||o.name;o.b=b;return 1}
+$('ovAdd').onclick=()=>$('ovF').click();
+$('ovF').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const i=new Image();await new Promise(r=>{i.onload=r;i.onerror=r;i.src=URL.createObjectURL(f)});if(!i.naturalWidth)return toast('Imagem inválida.');
+ const wp_=W*.6,hp=wp_*i.naturalHeight/i.naturalWidth,x0=W*.2,y0=H/2-hp/2,a=ll(x0,y0),c=ll(x0+wp_,y0+hp),o={id:uid(),name:f.name.replace(/\.[^.]+$/,''),b:{w:a[0],n:a[1],e:c[0],s:c[1]},op:.85,vis:1};
+ toast('Informe as coordenadas dos cantos (do software do drone). Já vem preenchido com a tela atual.');if(!(await ovDlg(o,1)))return;await gop('img','readwrite',s=>s.put(f,o.id));OVI[o.id]=i;S.ov.push(o);save();render()};
+document.addEventListener('input',e=>{const id=e.target.dataset&&e.target.dataset.ovo;if(id){const o=S.ov.find(x=>x.id===id);if(o){o.op=e.target.value/100;save();draw()}}});
+
+/* --- areas restritas --- */
+const ZK=['arar','gradear','rocar','pulverizar','adubar'];
+const pip=(p,c)=>{let r=false;for(let i=0,j=c.length-1;i<c.length;j=i++)if((c[i][1]>p[1])!==(c[j][1]>p[1])&&p[0]<(c[j][0]-c[i][0])*(p[1]-c[i][1])/(c[j][1]-c[i][1])+c[i][0])r=!r;return r};
+const sint=(a,b,c,d)=>{const o=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);return o(a,b,c)*o(a,b,d)<0&&o(c,d,a)*o(c,d,b)<0};
+function overl(a,b){if(a.some(q=>pip(q,b))||b.some(q=>pip(q,a)))return 1;for(let i=0;i<a.length;i++)for(let j=0;j<b.length;j++)if(sint(a[i],a[(i+1)%a.length],b[j],b[(j+1)%b.length]))return 1;return 0}
+const zBlock=t=>S.zones.filter(z=>(z.blk||[]).includes(t));
+function zoneGuard(p,type){if(!p)return true;const bad=zBlock(type).filter(z=>overl(p.c,z.c));return !bad.length||confirm('ATENÇÃO: '+NOME[type]+' é restrita em: '+bad.map(z=>z.name).join(', ')+'.\n'+bad.map(z=>z.note||'').filter(Boolean).join('\n')+'\nLançar mesmo assim?')}
+async function zoneDlg(z){const v=z||{blk:['pulverizar']};const r=await ask((z?'Editar':'Nova')+' área restrita',[{k:'name',l:'Nome (ex.: Canos rasos do pivô)',v:v.name},{k:'layer',l:'Camada',s:S.layers.map(x=>[x.id,x.name]),v:v.layer||S.al||'l0'},...ZK.map(k=>({k:'b_'+k,b:1,l:'Proibido: '+NOME[k],v:(v.blk||[]).includes(k)})),{k:'note',l:'Motivo (ex.: glifosato proibido no pasto; cano a 20 cm)',t:1,v:v.note}]);
+ if(!r||!r.name.trim())return null;return{name:r.name.trim(),layer:r.layer,blk:ZK.filter(k=>r['b_'+k]),note:r.note}}
+async function zoneNew(c){const r=await zoneDlg(null);if(!r)return 0;S.zones.push(Object.assign({id:uid(),c},r));return 1}
+const _ap=addPt;addPt=function(lng,lat,s){_ap(lng,lat,s);if(T&&T.type){T.zw=T.zw||{};zBlock(T.type).forEach(z=>{if(!T.zw[z.id]&&pip([lng,lat],z.c)){T.zw[z.id]=1;toast('⚠ ÁREA RESTRITA: '+z.name+' — sem '+NOME[T.type]+(z.note?' ('+z.note+')':''));try{navigator.vibrate&&navigator.vibrate([300,120,300])}catch(e){}}})}};
+const _so=saveOp;saveOp=function(t,ex){const r=_so(t,ex);try{const bad=zBlock(t.type).filter(z=>t.pts.some(q=>pip(q,z.c)));if(bad.length)setTimeout(()=>toast('⚠ O trajeto passou por área restrita: '+bad.map(z=>z.name).join(', ')+'. Confira.'),3400)}catch(e){}return r};
+$('bZone').onclick=()=>{if(T)return toast('Finalize a gravação antes de desenhar.');$('bPoly').click();drawKind='z';curs();drawBar();toast('Marque os cantos da área restrita e toque em Fechar.')};
+
+/* --- demarcar com GPS (a pe, cavalo, veiculo) --- */
+async function walkStart(){if(T)return toast('Finalize a gravação antes.');if(!navigator.geolocation)return toast('GPS indisponível.');
+ const r=await ask('Demarcar com GPS',[{k:'kind',l:'O que demarcar',s:[['p','Piquete'],['e','Estrutura'],['z','Área restrita'],['l','Linha (tubulação/fiação)']],v:'p'},{k:'how',l:'Como vai percorrer',s:[['3','A pé (ponto a cada 3 m)'],['6','A cavalo (a cada 6 m)'],['10','Veículo (a cada 10 m)']],v:'3'},{k:'acc',l:'Ignorar leituras com precisão pior que (m)',v:'15'}]);if(!r)return;
+ cancelDraw();drawKind=r.kind;mode='poly';walk={int:+r.how,acc:num(r.acc)||15};drawBar();
+ try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(l=>{if(walk)walk.wl=l}).catch(()=>{})}catch(e){}
+ walk.id=navigator.geolocation.watchPosition(p=>{if(!walk)return;const c=p.coords;me={lng:c.longitude,lat:c.latitude,acc:c.accuracy};if(c.accuracy>walk.acc){toast('Aguardando sinal melhor: ±'+Math.round(c.accuracy)+' m');draw();return}const g=[c.longitude,c.latitude],l=draft[draft.length-1];if(!l||dist(l,g)>=walk.int){draft.push(g);drawBar()}V.lng=g[0];V.lat=g[1];if(V.z<17)V.z=18;draw()},er=>toast('Erro de GPS: '+er.message),{enableHighAccuracy:true,maximumAge:0});
+ toast('Caminhe pelo contorno. “Desfazer” tira o último ponto; toque em Fechar ao terminar.')}
+function stopWalk(){if(!walk)return;try{navigator.geolocation.clearWatch(walk.id)}catch(e){}try{walk.wl&&walk.wl.release()}catch(e){}walk=null}
+$('bWalk').onclick=walkStart;
+
+/* --- selecao --- */
+const dseg=(x,y,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy||1)));return Math.hypot(a[0]+t*dx-x,a[1]+t*dy-y)};
+function hit(x,y){let r=null;S.points.forEach(p=>{if(p.hide||!lOn(p)||S.lay.m===false||S.fm[p.type]===false)return;const s=sp(p.lng,p.lat);if(Math.hypot(s[0]-x,s[1]-y)<20)r='m:'+p.id});if(r)return r;
+ S.lines.forEach(l=>{if(!lOn(l)||S.lay.l===false)return;for(let i=1;i<l.c.length;i++)if(dseg(x,y,sp(...l.c[i-1]),sp(...l.c[i]))<10)r='l:'+l.id});if(r)return r;
+ sortL(S.paddocks).forEach(p=>{if(vis(p)&&lOn(p)&&inPoly(x,y,p.c))r='p:'+p.id});if(r)return r;
+ S.zones.forEach(z=>{if(lOn(z)&&S.lay.z!==false&&inPoly(x,y,z.c))r='z:'+z.id});return r}
+function boxSel(b){const x0=Math.min(b.x0,b.x1),x1=Math.max(b.x0,b.x1),y0=Math.min(b.y0,b.y1),y1=Math.max(b.y0,b.y1),cross=b.x1<b.x0,ins=s=>s[0]>=x0&&s[0]<=x1&&s[1]>=y0&&s[1]<=y1,ok=c=>{const a=c.map(q=>sp(q[0],q[1]));return cross?a.some(ins):a.every(ins)};
+ if(!b.add)SEL.clear();
+ S.points.forEach(p=>{if(!p.hide&&lOn(p)&&S.lay.m!==false&&S.fm[p.type]!==false&&ins(sp(p.lng,p.lat)))SEL.add('m:'+p.id)});
+ S.paddocks.forEach(p=>{if(vis(p)&&lOn(p)&&ok(p.c))SEL.add('p:'+p.id)});
+ S.lines.forEach(l=>{if(lOn(l)&&S.lay.l!==false&&ok(l.c))SEL.add('l:'+l.id)});
+ S.zones.forEach(z=>{if(lOn(z)&&S.lay.z!==false&&ok(z.c))SEL.add('z:'+z.id)})}
+function selAll(){S.paddocks.forEach(p=>{if(vis(p)&&lOn(p))SEL.add('p:'+p.id)});S.points.forEach(p=>{if(!p.hide&&lOn(p))SEL.add('m:'+p.id)});S.lines.forEach(l=>{if(lOn(l))SEL.add('l:'+l.id)});S.zones.forEach(z=>{if(lOn(z))SEL.add('z:'+z.id)});selUI()}
+function selUI(){[...SEL].forEach(s=>{if(!getEl(s))SEL.delete(s)});const n=SEL.size;$('sbar').classList.toggle('on',n>0&&!mode&&!T);$('sN').textContent=n+' selecionado(s)';draw()}
+function toggleSel(){selMode=!selMode;$('bSel').classList.toggle('on',selMode);$('bSelF').classList.toggle('on',selMode);cv.style.cursor=selMode?'crosshair':'grab';toast(selMode?'Seleção: toque nos itens ou arraste uma caixa. Ctrl soma.':'Seleção desligada.')}
+$('bSel').onclick=$('bSelF').onclick=toggleSel;$('bAll').onclick=selAll;$('sClr').onclick=()=>{SEL.clear();selUI()};
+const mw=$('mapw');
+mw.addEventListener('pointerdown',e=>{if(e.target!==cv||mode||T||(e.pointerType==='mouse'&&e.button>0))return;const add=e.ctrlKey||e.metaKey;if(!(selMode||add))return;e.stopPropagation();cv.setPointerCapture(e.pointerId);box={x0:e.offsetX,y0:e.offsetY,x1:e.offsetX,y1:e.offsetY,add,id:e.pointerId,mv:0}},true);
+mw.addEventListener('pointermove',e=>{if(!box||e.pointerId!==box.id)return;e.stopPropagation();box.x1=e.offsetX;box.y1=e.offsetY;if(Math.hypot(box.x1-box.x0,box.y1-box.y0)>6)box.mv=1;draw()},true);
+const bUp=e=>{if(!box||e.pointerId!==box.id)return;e.stopPropagation();const b=box;box=null;if(e.type==='pointerup'){if(b.mv)boxSel(b);else{const h=hit(b.x0,b.y0);if(h){if(b.add||selMode)SEL.has(h)?SEL.delete(h):SEL.add(h);else{SEL.clear();SEL.add(h)}}else if(!b.add)SEL.clear()}}selUI()};
+mw.addEventListener('pointerup',bUp,true);mw.addEventListener('pointercancel',bUp,true);
+function delSel(){if(!SEL.size)return;if(!confirm('Excluir '+SEL.size+' item(ns) selecionado(s)? Dá para desfazer logo depois (Ctrl+Z).'))return;snapS();delIds([...SEL]);SEL.clear();save();render();toast('Excluído. Ctrl+Z desfaz.')}
+async function grpSel(){const it=selItems();if(it.length<2)return toast('Selecione 2 ou mais itens (Ctrl+clique ou caixa).');
+ const r=await ask('Agrupar '+it.length+' itens',[{k:'n',l:'Nome do grupo (ex.: Curral e anexos, Lote 1)',v:''},{k:'lote',b:1,l:'É um lote de aspersores',v:it.every(x=>x.o.type==='aspersor')}]);if(!r||!r.n.trim())return;
+ const id=uid();it.forEach(x=>x.o.gid=id);S.groups.push({id,name:r.n.trim(),lote:r.lote?1:0,vis:1});save();render();toast('Grupo criado.')}
+$('bGrp').onclick=$('sGrp').onclick=grpSel;$('sDel').onclick=delSel;
+$('sLay').onclick=async()=>{const r=await ask('Mover para camada',[{k:'l',l:'Camada',s:S.layers.map(x=>[x.id,x.name]),v:S.al||'l0'}]);if(!r)return;selItems().forEach(x=>x.o.layer=r.l);save();render()};
+function clearCat(k){const L={p:()=>S.paddocks.filter(p=>p.kind!=='e').map(o=>'p:'+o.id),e:()=>S.paddocks.filter(p=>p.kind==='e').map(o=>'p:'+o.id),m:()=>S.points.filter(p=>p.type!=='aspersor').map(o=>'m:'+o.id),a:()=>S.points.filter(p=>p.type==='aspersor').map(o=>'m:'+o.id),l:()=>S.lines.map(o=>'l:'+o.id),z:()=>S.zones.map(o=>'z:'+o.id)};
+ if(k==='o'||k==='g'){const n=(k==='o'?S.ops:S.gastos).length;if(!n)return toast('Nada para limpar.');if(!confirm('Apagar '+n+' registro(s)?'))return;snapS();if(k==='o')S.ops=[];else S.gastos=[]}
+ else{const ids=L[k]();if(!ids.length)return toast('Nada para limpar.');if(!confirm('Apagar '+ids.length+' item(ns) desta categoria?'))return;snapS();delIds(ids)}
+ save();render();toast('Categoria limpa. “Desfazer exclusão” reverte.')}
+$('bClr').onclick=()=>clearCat($('clK').value);$('bUnd').onclick=undoDel;
+
+/* --- pesquisa --- */
+function search(t){const q=t.toLowerCase(),R=[],has=s=>String(s||'').toLowerCase().includes(q),A=(l,s,f)=>R.push({l,s,f});
+ const m=t.match(/^\s*(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)\s*$/);if(m){const la=num(m[1]),lo=num(m[2]);if(okLL([lo,la]))A('Ir para '+la+', '+lo,'Coordenadas',()=>{FIND=[lo,la];V.lng=lo;V.lat=la;V.z=Math.max(V.z,17);draw()})}
+ S.groups.forEach(g=>{if(has(g.name))A(g.name,(g.lote?'Lote':'Grupo')+' · '+memb(g).length+' itens',()=>goSel(memb(g)))});
+ S.paddocks.forEach(p=>{if(has(p.name)||has(p.obs)||has((FN[p.fn]||[])[0]))A(p.name,(p.kind==='e'?'Estrutura':'Piquete')+' · '+ha(pArea(p.c)),()=>goSel(['p:'+p.id]))});
+ S.points.forEach(p=>{if(has(p.name)||has(p.obs)||has((PT[p.type]||[])[2]))A(p.name,(PT[p.type]||PT.outro)[2],()=>goSel(['m:'+p.id]))});
+ S.lines.forEach(l=>{if(has(l.name)||has(l.obs))A(l.name,l.kind==='fio'?'Fiação':'Tubulação',()=>goSel(['l:'+l.id]))});
+ S.zones.forEach(z=>{if(has(z.name)||has(z.note))A(z.name,'Área restrita',()=>goSel(['z:'+z.id]))});return R}
+function qList(){$('qr').innerHTML=SRC.slice(0,12).map((r,i)=>`<div class="li"><div class="t"><b>${esc(r.l)}</b><small>${esc(r.s)}</small></div><button class="btn s" data-qi="${i}">Ir</button></div>`).join('')}
+$('q').oninput=()=>{const t=$('q').value.trim();SRC=t?search(t):[];qList();if(t)$('qr').insertAdjacentHTML('beforeend','<button class="btn s" data-qw="1" style="margin:6px 0">Buscar “'+esc(t)+'” na internet (endereço/lugar)</button>')};
+$('q').onkeydown=e=>{if(e.key==='Enter'&&SRC[0])SRC[0].f();if(e.key==='Escape'){$('q').value='';SRC=[];qList();$('q').blur()}};
+async function webQ(t){if(!t)return;try{toast('Buscando...');const r=await(await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=6&q='+encodeURIComponent(t))).json();if(!r.length)return toast('Nada encontrado.');
+ SRC=r.map(x=>({l:x.display_name.split(',').slice(0,2).join(','),s:x.display_name,f:()=>{FIND=[+x.lon,+x.lat];V.lng=FIND[0];V.lat=FIND[1];V.z=Math.max(V.z,16);draw()}}));qList()}catch(e){toast('Sem internet ou busca indisponível.')}}
+
+/* --- desenho por cima: areas restritas, medidas, selecao --- */
+function hatch(){if(!HP){const c=document.createElement('canvas');c.width=c.height=14;const x=c.getContext('2d');x.fillStyle='rgba(255,59,48,.18)';x.fillRect(0,0,14,14);x.strokeStyle='rgba(255,59,48,.85)';x.lineWidth=2;x.beginPath();x.moveTo(0,14);x.lineTo(14,0);x.stroke();HP=ctx.createPattern(c,'repeat')}return HP}
+function dims(c,close){const n=c.length,e=close?n:n-1;for(let i=0;i<e;i++){const a=c[i],b=c[(i+1)%n],s=sp(a[0],a[1]),t=sp(b[0],b[1]);if(Math.hypot(s[0]-t[0],s[1]-t[1])<46)continue;ctx.fillText(fmt(dist(a,b),1)+' m',(s[0]+t[0])/2,(s[1]+t[1])/2-5)}}
+function pill(t){ctx.shadowBlur=0;ctx.font='600 13px system-ui';const w=ctx.measureText(t).width+20;ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(W/2-w/2,10,w,26);ctx.fillStyle='#fff';ctx.fillText(t,W/2,28)}
+function drawTop(){ctx.setTransform(dpr,0,0,dpr,0,0);ctx.textAlign='center';ctx.font='600 12px system-ui';
+ S.zones.forEach(z=>{if(!lOn(z)||S.lay.z===false||(mode==='edit'&&edit.p===z))return;path(z.c,true);ctx.fillStyle=hatch();ctx.fill();ctx.strokeStyle='#ff3b30';ctx.setLineDash([10,6]);ctx.lineWidth=2.5;ctx.stroke();ctx.setLineDash([]);
+  const a=z.c.reduce((s,q)=>[s[0]+q[0]/z.c.length,s[1]+q[1]/z.c.length],[0,0]),s=sp(a[0],a[1]);ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText('🚫 '+z.name,s[0],s[1]);ctx.fillText('sem: '+(z.blk||[]).map(k=>NOME[k]).join(', '),s[0],s[1]+15);ctx.shadowBlur=0});
+ ctx.fillStyle='#fff';ctx.shadowColor='#000';ctx.shadowBlur=4;
+ if(S.dim){S.paddocks.forEach(p=>{if(vis(p)&&lOn(p)&&!p.sDim&&!(mode==='edit'&&edit.p===p))dims(p.c,1)});S.zones.forEach(z=>{if(lOn(z)&&S.lay.z!==false)dims(z.c,1)});S.lines.forEach(l=>{if(lOn(l)&&S.lay.l!==false)dims(l.c,0)})}
+ const dr=mode==='edit'?edit.c:mode==='poly'?draft:null;
+ if(dr&&dr.length){const poly=mode==='edit'||(drawKind!=='l'&&drawKind!=='a'&&dr.length>2);dims(dr,mode==='edit');
+  if(mode==='poly'&&HV){const a=dr[dr.length-1],s=sp(a[0],a[1]),t=sp(HV[0],HV[1]);ctx.fillText(fmt(dist(a,HV),1)+' m',(s[0]+t[0])/2,(s[1]+t[1])/2-6)}
+  if(dr.length>1){let L=0;for(let i=1;i<dr.length;i++)L+=dist(dr[i-1],dr[i]);if(poly)L+=dist(dr[dr.length-1],dr[0]);pill(poly?'Perímetro '+fmt(L,1)+' m · Área '+ha(pArea(dr)):'Comprimento '+fmt(L,1)+' m')}}
+ ctx.shadowBlur=0;ctx.setLineDash([]);ctx.strokeStyle='#ffd400';ctx.lineWidth=4;
+ selItems().forEach(({k,o})=>{if(k==='m'){const s=sp(o.lng,o.lat);ctx.beginPath();ctx.arc(s[0],s[1],21,0,7);ctx.stroke()}else{path(o.c,k!=='l');ctx.stroke()}});
+ if(FIND){const s=sp(FIND[0],FIND[1]);ctx.beginPath();ctx.arc(s[0],s[1],9,0,7);ctx.fillStyle='#ff3b30';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke()}
+ if(box&&box.mv){const x=Math.min(box.x0,box.x1),y=Math.min(box.y0,box.y1),w=Math.abs(box.x1-box.x0),h=Math.abs(box.y1-box.y0),cr=box.x1<box.x0;ctx.fillStyle=cr?'rgba(80,200,120,.18)':'rgba(60,140,255,.18)';ctx.strokeStyle=cr?'#4cc38a':'#3c8cff';ctx.lineWidth=1.5;ctx.setLineDash(cr?[6,4]:[]);ctx.fillRect(x,y,w,h);ctx.strokeRect(x,y,w,h);ctx.setLineDash([])}}
+$('bDim').onclick=()=>{S.dim=!S.dim;save();$('bDim').classList.toggle('on',!!S.dim);draw()};
+
+/* --- listas, grupos, camadas --- */
+const _r4=render;render=function(){_r4();myRender()};
+function myRender(){S.groups=S.groups||[];S.zones=S.zones||[];S.ov=S.ov||[];
+ S.points.forEach(p=>{if(p.type==='aspersor'&&p.grp&&!p.gid)p.gid=p.grp});
+ const used=new Set([...S.paddocks,...S.points,...S.lines,...S.zones].map(o=>o.gid).filter(Boolean));
+ used.forEach(id=>{if(!S.groups.some(g=>g.id===id)){const f=S.points.find(p=>p.gid===id),a=f&&f.type==='aspersor';S.groups.push({id,name:a?'Lote '+String(f.name).replace(/\s*\d+$/,''):'Grupo',lote:a?1:0,vis:1})}});
+ S.groups=S.groups.filter(g=>used.has(g.id));HG.clear();S.groups.forEach(g=>{if(g.vis===0)HG.add(g.id)});
+ $('lGrp').innerHTML=S.groups.map(g=>`<div class="li"><span style="font-size:20px">${g.lote?'🌀':'🗂️'}</span><div class="t"><b>${esc(g.name)}</b><small>${memb(g).length} itens${g.lote?' · lote de aspersores':''}</small></div><div class="acts"><button class="btn s" data-gs="${g.id}">Selecionar</button><button class="btn s" data-gh="${g.id}">${g.vis===0?'Mostrar':'Ocultar'}</button><button class="btn s" data-gr="${g.id}">Nome</button><button class="btn s dn" data-gx="${g.id}">Excluir</button></div></div>`).join('')||'<div class="empty">Nenhum grupo. Selecione itens (⬚ ou Ctrl+clique) e toque em “Agrupar seleção”. Linhas de aspersores viram lotes sozinhas.</div>';
+ $('lZ').innerHTML=S.zones.map(z=>`<div class="li"><span style="font-size:20px">🚫</span><div class="t"><b>${esc(z.name)}</b><small>${ha(pArea(z.c))} · sem ${(z.blk||[]).map(k=>NOME[k]).join(', ')||'—'}${z.note?' · '+esc(z.note):''}</small></div><div class="acts"><button class="btn s" data-zv="${z.id}">Ver</button><button class="btn s" data-ze="${z.id}">Editar</button><button class="btn s" data-zf="${z.id}">Forma</button><button class="btn s dn" data-zx="${z.id}">Excluir</button></div></div>`).join('')||'<div class="empty">Nenhuma área restrita. Use “Área restrita” (tecla R).</div>';
+ $('lOv').innerHTML=S.ov.map(o=>`<div class="li"><div class="t"><b>${esc(o.name)}</b><small>Foto de drone · opacidade</small><input type="range" min="10" max="100" value="${Math.round((o.op??.85)*100)}" data-ovo="${o.id}"></div><div class="acts"><button class="btn s" data-ovv="${o.id}">Ver</button><button class="btn s" data-ovh="${o.id}">${o.vis===0?'Mostrar':'Ocultar'}</button><button class="btn s" data-ovp="${o.id}">Posição</button><button class="btn s dn" data-ovx="${o.id}">X</button></div></div>`).join('');
+ document.querySelectorAll('[data-lx]').forEach(b=>b.insertAdjacentHTML('afterend','<button class="btn s dn" data-lxe="'+b.dataset.lx+'">Excluir c/ itens</button>'));
+ const c=document.querySelector('#lLay .chips');if(c&&!c.querySelector('[data-lay="z"]'))c.insertAdjacentHTML('beforeend','<div class="chip '+(S.lay.z===false?'off':'')+'" data-lay="z">Áreas restritas</div>');
+ $('bDim').classList.toggle('on',!!S.dim);selUI()}
+document.body.addEventListener('click',async e=>{const d=e.target.closest('[data-gs],[data-gh],[data-gr],[data-gx],[data-lxe],[data-ovv],[data-ovh],[data-ovp],[data-ovx],[data-zv],[data-ze],[data-zf],[data-zx],[data-qi],[data-qw]');if(!d)return;const x=d.dataset;
+ if(x.qi!=null){SRC[+x.qi].f();return}if(x.qw!=null){webQ($('q').value.trim());return}
+ const g=S.groups.find(g=>g.id===(x.gs||x.gh||x.gr||x.gx)),o=S.ov.find(o=>o.id===(x.ovv||x.ovh||x.ovp||x.ovx)),z=S.zones.find(z=>z.id===(x.zv||x.ze||x.zf||x.zx));
+ if(x.gs){goSel(memb(g));return}
+ if(x.gh)g.vis=g.vis===0?1:0;
+ if(x.gr){const r=await ask('Nome do grupo',[{k:'n',l:'Nome',v:g.name}]);if(r&&r.n.trim())g.name=r.n.trim()}
+ if(x.gx){const r=await ask('Excluir “'+g.name+'”',[{k:'m',l:'O que fazer',s:[['g','Só desfazer o grupo (manter os itens)'],['t','Excluir o grupo E todos os itens dele']],v:'g'}]);if(!r)return;snapS();const ids=memb(g);if(r.m==='t')delIds(ids);else ids.forEach(s=>delete getEl(s).gid);S.groups=S.groups.filter(q=>q!==g)}
+ if(x.lxe){const l=S.layers.find(l=>l.id===x.lxe);if(!l||!confirm('Excluir a camada “'+l.name+'” E todos os itens dela?'))return;snapS();delIds([['p',S.paddocks],['m',S.points],['l',S.lines],['z',S.zones]].flatMap(([k,a])=>a.filter(i=>(i.layer||'l0')===x.lxe).map(i=>k+':'+i.id)));S.layers=S.layers.filter(q=>q!==l);if(S.al===x.lxe)S.al='l0'}
+ if(x.ovv){fitPts([[o.b.w,o.b.n],[o.b.e,o.b.s]]);return}
+ if(x.ovh)o.vis=o.vis===0?1:0;
+ if(x.ovp){if(!(await ovDlg(o,0)))return}
+ if(x.ovx){if(!confirm('Remover esta foto de drone?'))return;gop('img','readwrite',s=>s.delete(o.id)).catch(()=>0);delete OVI[o.id];S.ov=S.ov.filter(q=>q!==o)}
+ if(x.zv){fitPts(z.c);return}
+ if(x.ze){const r=await zoneDlg(z);if(r)Object.assign(z,r);else return}
+ if(x.zf){cancelDraw();mode='edit';edit={p:z,c:z.c.map(q=>q.slice()),u:[],mv:0,sel:null};fitPts(z.c);drawBar();toast('Arraste os cantos e toque em Salvar.');return}
+ if(x.zx){if(!confirm('Excluir esta área restrita?'))return;snapS();S.zones=S.zones.filter(q=>q!==z)}
+ save();render()});
+
+/* --- atalhos de teclado --- */
+addEventListener('keydown',e=>{const t=document.activeElement&&document.activeElement.tagName;if(/INPUT|TEXTAREA|SELECT/.test(t)||$('dlg').open)return;const k=e.key.toLowerCase(),c=e.ctrlKey||e.metaKey,dw=mode==='poly'||mode==='edit'||mode==='mvpt';
+ if(k==='enter'){if(dw&&!$('bDone').disabled){e.preventDefault();$('bDone').click()}return}
+ if(c){const f={a:selAll,z:()=>dw?$('bUndo').click():undoDel(),g:grpSel,f:()=>$('q').focus(),s:()=>$('bBk').click()}[k];if(f){e.preventDefault();f()}return}
+ if(k==='delete'||k==='backspace'){e.preventDefault();if(dw&&mode==='poly')$('bUndo').click();else if(SEL.size)delSel();return}
+ if(k==='escape'){SEL.clear();if(selMode)toggleSel();selUI();return}
+ if(k==='/'){e.preventDefault();$('q').focus();return}
+ if(k==='?'){const d=$('kbH');d.open=true;d.scrollIntoView({block:'center'});return}
+ if(k==='+'||k==='='){zoomAt(W/2,H/2,V.z+1);return}if(k==='-'){zoomAt(W/2,H/2,V.z-1);return}
+ if(k==='f'){$('bFit').click();return}if(k==='d'){$('bDim').click();return}if(k==='s'){toggleSel();return}
+ const m={p:'bPoly',e:'bStr',m:'bPt',l:'bLine',a:'bAsp',r:'bZone',g:'bWalk'}[k];if(m&&!dw&&!T){e.preventDefault();$(m).click()}});
+ovLoad();if(MIG)flush();
+
 addEventListener('resize',resize);resize();render();fit();
+})();
 </script></body></html>
